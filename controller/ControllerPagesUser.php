@@ -88,7 +88,7 @@ class ControllerPagesUser
                         "country"=>$this->human_teacher->name_country, "name_regions"=>$this->human_teacher->name_regions, "name_type"=>$this->human_teacher->name_type,
                         "name_settlements"=>$this->human_teacher->name_settlements, "email"=>$this->human_teacher->email, "phone"=>$this->human_teacher->phone, 
                         "institute"=>$this->human_teacher->name_institute, "faculty"=>$this->human_teacher->name_faculty, "department"=>$this->human_teacher->name_department,
-                        "status"=>$this->human_teacher->name_status);
+                        "status"=>$this->human_teacher->name_status, "position"=>$this->human_teacher->name_position);
 
                         return $infoTeacher;
                     }
