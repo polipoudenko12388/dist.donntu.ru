@@ -21,6 +21,13 @@ class Discipline
         return $result;    
     }
 
+    public static function printfTeacherId($id_teacher, $conn)
+    {
+        $query =  $conn->prepare("SELECT * FROM `dbwebsite_university`.`list_disciplines` where `dbwebsite_university`.`list_disciplines`.`id_teacher`=?");  
+        $query->execute([$id_teacher]);
+        $result = $query->fetchall(PDO::FETCH_BOTH);
+        return $result;  
+    }
     // проверка на дубликат и добавление данных в "list_disciplines"
     public function InsertDiscipline($name, $id_institute,$id_faculty, $id_department, $id_teacher, $fon)
     {

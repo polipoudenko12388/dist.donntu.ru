@@ -95,7 +95,7 @@ class Discipline_flow
             for($i=0; $i<count($result); $i++)
             {
                 $query =  $this->conn->prepare("SELECT DISTINCT `dbwebsite_university`.`discipline_flow`.`id`, `dbwebsite_university`.`discipline_flow`.`id_flow` , 
-                `dbwebsite_university`.`flow`.`name` as `name_flow`
+                `dbwebsite_university`.`flow`.`name` as `name_flow`, `dbwebsite_university`.`list_disciplines`.`id_teacher` as `id_teacher_ovner`
                 FROM  `dbwebsite_university`.`discipline_flow` 
                 inner join `dbwebsite_university`.`flow` on `dbwebsite_university`.`flow`.`id` = `dbwebsite_university`.`discipline_flow`.`id_flow`
                 inner join `dbwebsite_university`.`teacher_discipline` on  `dbwebsite_university`.`teacher_discipline`.`id_discipline_flow` = `dbwebsite_university`.`discipline_flow`.`id`
@@ -116,6 +116,7 @@ class Discipline_flow
                 //     }    
                 // }
 
+                $discTeacherOvner = Discipline::printfTeacherId($id_teacher, $this->conn);
                 
                 if ($resultFlow)
                 {
@@ -125,7 +126,10 @@ class Discipline_flow
                         $data_array[$i]["array_flows"][$j] =  array("id_flow"=>$resultFlow[$j]['id_flow'], "name_flow"=>$resultFlow[$j]['name_flow']);
                     }    
                 }
-                else $data_array[] = array("id_list_discipline"=>null, "name_disc"=> null, "fon" => null, "array_flows"=> null);
+                // если потоков нет, но он является владельцем дисциплины
+                else if($discTeacherOvner) $data_array[] = array("id_list_discipline"=>$result[$i]['id'], "name_disc"=> $result[$i]['name'], "fon" => $result[$i]['fon'], "array_flows"=> null);
+            
+                else break;
             }
             return $data_array;
         }
