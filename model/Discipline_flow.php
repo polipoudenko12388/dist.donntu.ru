@@ -131,7 +131,8 @@ class Discipline_flow
             
                 else break;
             }
-            return $data_array;
+            if($data_array) return $data_array;
+            else return array();
         }
         else return false;
     }
