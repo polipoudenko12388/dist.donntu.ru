@@ -39,7 +39,7 @@ class ControllerRegistration
     }
 
 
-    public function ckeckveritif($email, $login, $password, $id_user, $id_role, $date_registration, $date_last_visit)
+    public function ckeckveritif($email, $login, $password, $id_role, $date_registration, $date_last_visit, $snils_inn)
     {
         $verification_login = $this->authorization->verification_login($login);
         if($verification_login)  return  ["error"=>"Пользователь с данным логином уже существует. Придумайте другой."];
@@ -49,11 +49,16 @@ class ControllerRegistration
             if ($verification_email)  return  ["error"=>"Пользователь с данным email уже существует. Выберите другой."];
             else 
             {
+                $this->user_teacher->InsertUser($this->human_teacher->surname, $this->human_teacher->name, $this->human_teacher->patronymic, $this->human_teacher->email,
+                $this->human_teacher->phone, $this->human_teacher->photo, $this->human_teacher->snils, $this->human_teacher->inn);
+
+                $id_user = $this->user_teacher->find_human_dbwebsite($snils_inn)['id'];
+                $this->user_teacher->InsertTeacher($id_user, $this->human_teacher->name_position);
                 $this->authorization->InsertAuthorizationUser($email, $login, $password, $id_user, $id_role, $date_registration, $date_last_visit);
                 return ["info"=>"Регистрация прошла успешно."];
             }
         }
-    }
+    }            
     public function funRegistrationCheck($id_role, $name_role, $snils_inn, $login, $email, $password, $date_registration, $date_last_visit)
     {
         if (strcasecmp($name_role, "преподаватель") == 0)
@@ -70,29 +75,18 @@ class ControllerRegistration
                 // его нет в БД в целом
                 else if ($checkTableUser['info']==1)
                 {
-                    $this->user_teacher->InsertUser($this->human_teacher->surname, $this->human_teacher->name, $this->human_teacher->patronymic, $this->human_teacher->email,
-                    $this->human_teacher->phone, $this->human_teacher->photo, $this->human_teacher->snils, $this->human_teacher->inn);
 
-                    $id_user = $this->user_teacher->find_human_dbwebsite($snils_inn)['id'];
-                    $this->user_teacher->InsertTeacher($id_user, $this->human_teacher->name_position);
-
-                    return $this->ckeckveritif($email, $login, $password, $id_user, $id_role, $date_registration, $date_last_visit);
-
+                    return $this->ckeckveritif($email, $login, $password, $id_role, $date_registration, $date_last_visit, $snils_inn);
                 }
                 // человека нет в таблице преподаватели
                 else if ($checkTableUser['info']==2)
                 {
-                    $id_user = $this->user_teacher->find_human_dbwebsite($snils_inn)['id'];
-                    $this->user_teacher->InsertTeacher($id_user, $this->human_teacher->name_position);
-
-                    return $this->ckeckveritif($email, $login, $password, $id_user, $id_role, $date_registration, $date_last_visit);
+                    return $this->ckeckveritif($email, $login, $password, $id_role, $date_registration, $date_last_visit, $snils_inn);
                 }
-
             }
-            else if ($result['info']==0)  return  ["error"=>"Вас нет в БД Университета. Регистрация невозможна."];
-            else if ($result['info']==2)  return  ["error"=>"Вас нет в БД Университета как преподавателя. Регистрация невозможна."];
+        else if ($result['info']==0)  return  ["error"=>"Вас нет в БД Университета. Регистрация невозможна."];
+        else if ($result['info']==2)  return  ["error"=>"Вас нет в БД Университета как преподавателя. Регистрация невозможна."];
         }
-        
     }
 
 
