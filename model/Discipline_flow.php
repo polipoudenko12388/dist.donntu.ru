@@ -105,15 +105,27 @@ class Discipline_flow
                 $query->execute([$result[$i]['id'], $id_teacher, $id_teacher]);
                 $resultFlow = $query->fetchall(PDO::FETCH_BOTH);
 
-                $data_array[] = array("id_list_discipline"=>$result[$i]['id'], "name_disc"=> $result[$i]['name'], "fon" => $result[$i]['fon'],
-                "array_flows"=> null);
+
+                // $data_array[] = array("id_list_discipline"=>$result[$i]['id'], "name_disc"=> $result[$i]['name'], "fon" => $result[$i]['fon'],
+                // "array_flows"=> null);
+                // if ($resultFlow)
+                // {
+                //     for ($j=0; $j<count($resultFlow); $j++)
+                //     {
+                //         $data_array[$i]["array_flows"][$j] =  array("id_flow"=>$resultFlow[$j]['id_flow'], "name_flow"=>$resultFlow[$j]['name_flow']);
+                //     }    
+                // }
+
+                
                 if ($resultFlow)
                 {
+                    $data_array[] = array("id_list_discipline"=>$result[$i]['id'], "name_disc"=> $result[$i]['name'], "fon" => $result[$i]['fon']);
                     for ($j=0; $j<count($resultFlow); $j++)
                     {
                         $data_array[$i]["array_flows"][$j] =  array("id_flow"=>$resultFlow[$j]['id_flow'], "name_flow"=>$resultFlow[$j]['name_flow']);
                     }    
                 }
+                else $data_array[] = array("id_list_discipline"=>null, "name_disc"=> null, "fon" => null, "array_flows"=> null);
             }
             return $data_array;
         }

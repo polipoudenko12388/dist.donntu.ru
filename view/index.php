@@ -52,11 +52,11 @@ if($_SERVER['REQUEST_METHOD'] == "POST")
         $result = $controllerAuthorization->veritifLoginPassword($input['email_login'], $input['password']);
     }
     // если переход происходит на "Главную пользователя из других страниц" : {"MainTeacher":{"token":"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZF90ZWFjaGVyIjoxfQ.BkPnWnRd3VHuD1y254Jy9WnQtZmuZEzkI2u6o_6v9wI","id_user":2,"id_teacher":6}}
-    else if ($data["MainTeacher"])
-     {
-        $mainTeacher = $data["MainTeacher"]; 
-        $result =  $controllerPagesUser->mainUser($mainTeacher['token'],$mainTeacher['id_user']);
-     }
+    // else if ($data["MainTeacher"])
+    //  {
+    //     $mainTeacher = $data["MainTeacher"]; 
+    //     $result =  $controllerPagesUser->mainUser($mainTeacher['token'],$mainTeacher['id_user']);
+    //  }
 
      // если переход происходит на "Профиль пользователя из других страниц" : {"ProfileTeacher":{"token":"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZF90ZWFjaGVyIjoxfQ.BkPnWnRd3VHuD1y254Jy9WnQtZmuZEzkI2u6o_6v9wI","id_user":2,"id_teacher":6}}
      else if ($data["ProfileTeacher"])
