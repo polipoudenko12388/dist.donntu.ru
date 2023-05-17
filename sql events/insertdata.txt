@@ -1,0 +1,12 @@
+-- INSERT INTO `dbwebsite_university`.`user` (`surname`, `name`, `patronymic`, `email`, `phone`, `id_human_db_univ`)
+-- SELECT dbuniversity.human.`surname`, dbuniversity.human.`name`, dbuniversity.human.`patronymic`, 
+-- dbuniversity.human.`email`, dbuniversity.human.`phone`,dbuniversity.human.id
+--  FROM dbuniversity.human where dbuniversity.human.id>=33 and dbuniversity.human.id<43
+
+-- INSERT INTO `dbwebsite_university`.`student` (`id_user`) 
+-- SELECT dbwebsite_university.user.id FROM dbwebsite_university.user 
+-- where dbwebsite_university.user.id>60
+
+-- INSERT INTO `dbwebsite_university`.`group_student` (`id_student`)
+-- SELECT dbwebsite_university.student.id FROM dbwebsite_university.student
+-- where dbwebsite_university.student.id>38
