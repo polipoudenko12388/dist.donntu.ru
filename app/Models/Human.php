@@ -20,7 +20,7 @@ class Human extends Model
     }
 
     // получение данных конкретного human
-    protected function getDataHuman($id_human)
+    public function getDataHuman($id_human)
     {
         $result = DB::connection($this->ConnectDBUniv)->table('human')
         ->select('human.id','human.surname','human.name','human.patronymic','human.datebirth','human.email', 'human.phone','human.photo',
