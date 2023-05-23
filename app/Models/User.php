@@ -22,29 +22,39 @@ class User extends Model
         return DB::connection(User::$ConnectDBWebsite)->table($nametable)->whereIn($namecolumnsql, $array_value_sql_id)->count();
     }
 
-    // поиск записей по условиям where
-    public static function SeachRecordsbyWhere($nametable, $strwhereRaw, $array_value_sql_raw)
+    // поиск записей по условиям whereRaw
+    public static function SeachRecordsbyWhere($nametable, $strwhereRaw, $array_value_sql_raw=null,$strnamecolumnprintsql=null)
     {
-        return DB::connection(User::$ConnectDBWebsite)->table($nametable)->whereRaw($strwhereRaw, $array_value_sql_raw)->get();
+        return DB::connection(User::$ConnectDBWebsite)->table($nametable)
+        ->when($strnamecolumnprintsql, function ($query, $strnamecolumnprintsql)
+        { 
+            $query->selectRaw($strnamecolumnprintsql);
+        })
+        ->whereRaw($strwhereRaw, $array_value_sql_raw)->get();
     }
 
 
      // получить основную информацию о пользователе (ФИО, email, phone)
-     public static function getDataUser($nametable, $arraynamecolumnprint, $secondjoin, $namecolumnsql, $id_user)
+     public static function getDataObject($nametable, $arraynamecolumnprint, $tablejoin, $firstjoin,$secondjoin, $namecolumnsql, $value_sql)
      {
          $result = DB::connection(Discipline::$ConnectDBWebsite)->table($nametable)
          ->select($arraynamecolumnprint)
-         ->join('user', 'user.id','=',$secondjoin)
-         ->where($namecolumnsql, $id_user)
-         ->first();    
+         ->join($tablejoin, $firstjoin,'=',$secondjoin)
+         ->where($namecolumnsql, $value_sql)
+         ->get();    
          return $result;
      }
 
       // список данных таблицы (ролей/институтов/факультетов/кафедр)
-      public static function getListData($connect, $nametable, $arraynamecolumnprint, $namecolumnsql=null, $value_sql=null)
+      public static function getListData($connect, $nametable, $arraynamecolumnprint, $namecolumnsql=null, $value_sql=null,$tablejoin=null, $firstjoin=null,$secondjoin=null)
       {
         return DB::connection($connect)->table($nametable)
         ->select($arraynamecolumnprint)
+        ->when($tablejoin, function ($query, $tablejoin) use(&$firstjoin, &$secondjoin) 
+        { 
+            $query->distinct();
+            $query->join($tablejoin, $firstjoin,'=',$secondjoin);
+        })
         ->when($value_sql, function ($query, $value_sql) use(&$namecolumnsql) 
         { 
             $query->where($namecolumnsql, $value_sql);
@@ -69,9 +79,19 @@ class User extends Model
         DB::connection(User::$ConnectDBWebsite)->table($nametable)->where([$arraycolumnsql])->update($array_update_value);
     }
 
+      // обновление записей
+      public static function UpdateColumnJson($nametable, $namecolumnsql, $value_sql, $name_update_column, $str_update_value)
+      {
+        DB::connection(User::$ConnectDBWebsite)->table($nametable)->where($namecolumnsql, $value_sql)->update([$name_update_column => DB::raw($str_update_value)]);
+      }
+
     public static function DeleteRecord($nametable,$strwhereRaw, $array_value_sql_raw,$namecolumnsql=null, $array_delete_id_value=null)
     {
-        return DB::connection(User::$ConnectDBWebsite)->table($nametable)->whereRaw($strwhereRaw, $array_value_sql_raw)
+        return DB::connection(User::$ConnectDBWebsite)->table($nametable)
+        ->when($array_value_sql_raw, function ($query, $array_value_sql_raw) use (&$strwhereRaw)
+        {
+            $query->whereRaw($strwhereRaw, $array_value_sql_raw);
+        })
         ->when($array_delete_id_value, function ($query, $array_delete_id_value) use (&$namecolumnsql)
         {
             $query->whereIn($namecolumnsql, $array_delete_id_value);

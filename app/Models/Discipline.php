@@ -17,8 +17,6 @@ class Discipline extends Model
         ->leftJoin('list_disciplines', 'list_disciplines.id','=','discipline_flow.id_list_discipline')
         ->leftJoin('teacher_discipline', 'discipline_flow.id','=','teacher_discipline.id_discipline_flow')
         ->join('flow', 'discipline_flow.id_flow','=','flow.id')
-        // ->join('teacher', 'teacher.id','=','teacher_discipline.id_teacher')
-        // ->join('user', 'user.id','=','teacher.id_user')
         ->where('discipline_flow.id_list_discipline', $id_list_disc)
         ->where('discipline_flow.id_flow', $id_flow)
         ->get();    

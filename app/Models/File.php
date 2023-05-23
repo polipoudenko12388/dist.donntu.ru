@@ -30,4 +30,21 @@ class File extends Model
  
 		return strtr($name, $converter);
     }
+
+	// создание json файла посещаемости (при добавлении потока в дисциплину)
+	public static function create_file_log_attend_group_json($id_log_group,$id_group,$name_group,$array_students)
+	{
+		$log_attend_group = 
+		[
+			"id_group" => $id_group,
+			"name_group" => $name_group,
+			"attendance_group" => 
+			[[
+				"type_class" => "Л", // тип занятия (по дефолту)
+				"date" => date('Y-m-d'), // дата занятия (по дефолту сегодняшняя)
+				"array_students" => $array_students
+			]]
+		]; 
+		return json_encode($log_attend_group);
+	}
 }

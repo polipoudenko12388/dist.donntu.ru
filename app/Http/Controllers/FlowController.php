@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Flow;
 use App\Models\User;
+use App\Models\Log;
 
 class FlowController extends Controller
 {
@@ -114,8 +115,17 @@ class FlowController extends Controller
         { 
             if ($request->input('groups')!=null)
             {
+                // удаление групп потока в т. flow_group
                 User::DeleteRecord("flow_group","id_flow=?",[$request->input('id_flow')], 'id_group', $request->input('groups'));
-                return response()->json(["info"=>"Удаление групп потока прошло успешно."]);  
+
+                // добавлен ли этот поток в диссциплину 
+                $buf = Log::SearchGroupsFlowinLog(['log_group.id as id_log_group'],$request->input('id_flow'), $request->input('groups'));
+                if (count($buf)>0)
+                {
+                    // удаление журнала групп данного потока дисциплины
+                    User::DeleteRecord("log_group",null,null, 'id', array_map(function ($object){return $object->id_log_group;},$buf->toArray()));
+                }
+                return response()->json(["info"=>"Удаление групп потока прошло успешно."]);   
             }
             else   return response()->json(["error" => "Группы не были выбраны для удаления из потока."]);
         }
@@ -144,6 +154,15 @@ class FlowController extends Controller
             if ($request->input('groups')!=null)
             {
                 $this->InsertRecordFlowGroup($request->input('id_flow'),$request->input('groups'));
+                
+                // добавлен ли этот поток в дисциплину 
+                $buf = Log::SearchGroupsFlowinLog(['log_disc_flow.id as id_log'],$request->input('id_flow'),null,true);
+                if (count($buf)>0)
+                {
+                    // создание журнала в log_group для новых групп данного потока дисциплины
+                    for ($i=0; $i<count($buf);$i++) DisciplineController::addinLog_group(collect(array_map(function ($object) { return (object)["id_group"=>$object]; },
+                    $request->input('groups'))), 1, $buf[$i]->id_log);
+                }
                 return response()->json(["info"=>"Добавление новых групп потока прошло успешно."]);
             }
             else   return response()->json(["error" => "Группы не были выбраны для добавления в поток."]);

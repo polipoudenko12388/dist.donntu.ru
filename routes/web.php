@@ -8,8 +8,8 @@ date_default_timezone_set('Europe/Moscow');
 Route::get('/registration',  'RegistrationController@getListRole');
 
 // Обработка регистрации
-// (например: Бражников Виталий - АСУ-19)
-// отправка на сервер: {"id_role_user":"1", "id_role_db_univ":null, "inn_snils":"12345678922", "login":"loginbrazhnikov", "email":"emailbrazhnikov@gmail.com",  "password":"password24", "date_registration":"2023-05-03" }
+// (например: Варанкин - БИ-19)
+// отправка на сервер: {"id_role_user":"1", "id_role_db_univ":null, "inn_snils":"12345678945", "login":"loginvarankin", "email":"emailvarankin@gmail.com",  "password":"passwordvarankin", "date_registration":"2023-05-03" }
 // (например: Секирин Александр - преподаватель)
 // отправка на сервер: {"id_role_user":"5", "id_role_db_univ":"2", "inn_snils":"12345678935", "login":"loginsekirin", "email":"emailsekirin@gmail.com",  "password":"password25", "date_registration":"2023-05-03" }
 // отправка на клиент: "error" or "info"
@@ -17,6 +17,7 @@ Route::post('/registration',  'RegistrationController@RegistrationProcessing');
 
 // Проверка авторизации
 // отправка на сервер: {"email_login":"login21","password":"password21", "platform":"Windows", "mobile":"false","brand":"Opera GX", "version_brand":"97"} - Теплова
+// отправка на клиент: "error" or { "id_role_user": 5,  "id_user_reg": 39,  "token": ""}
 // token будет хранить инфу об id_user,id_role_user,id_teacher_student
 Route::post('/authorization',  'AuthorizationController@Authorizationcheck');
 
@@ -95,6 +96,20 @@ Route::prefix('/teacher')->group(function ()
         // отправка на сервер: {"id_user_reg":"39","token":"", "number_hours_reading":null, "id_disc_flow":null, "add_teachers":null, "delete_teachers":[1,2] }
         // отправка на клиент: "error" or "info"
         Route::post('/editflowindisc', 'DisciplineController@ResultEditFlowinDisc'); // +++
+
+
+       
+        Route::prefix('/posts')->group(function ()
+        {
+            // отправка на сервер: {"id_user_reg":"39","token":"", id_disc_flow:null, "id_teacher_creator":null, text:null,attendance_button:true,
+            // date_end_button: "2023-05-22 15:15:00", id_type_class:""}
+            Route::post('/createpost', 'PostController@ResultCreatePost');
+
+        });
+
+        // для полины 
+        Route::post('/createlog', 'DisciplineController@createlogbuf'); // +++
+        
     });
    
     // отправка на сервер: {"id_user_reg":"39","token":""}
@@ -162,7 +177,7 @@ Route::prefix('/teacher')->group(function ()
     //       "patronymic": "Юрьевна"
     //     }, {} ]
     Route::post('/students',  'GroupController@ListStudentsGroup'); // +++
-    // отправка на сервер: {"id_user_reg":"39","token":""}
+    // отправка на сервер: {"id_user_reg":"39","token":"", id_flow:null}
     // отправка на клиент:  "error" or
     // [
     //     {
@@ -229,7 +244,48 @@ Route::prefix('/teacher')->group(function ()
 
 
     // -------------------------------------------------------------------------------------------------------------
-    // 2 часть 17.05.2023
+    // 2 часть 19.05.2023
+    Route::prefix('/logs')->group(function () 
+    {
+        // отправка на сервер: {"id_user_reg":"39","token":""}
+        // отправка на клиент: "error" or
+        // [
+        //     {
+        //       "id_type": 1,
+        //       "name_type": "посещаемости"
+        //     },
+        //     {
+        //       "id_type": 2,
+        //       "name_type": "успеваемости"
+        //     }
+        //   ]
+        Route::post('/typelogs',  'LogController@ListTypeLogs'); 
+
+        // отправка на сервер: {"id_user_reg":"39","token":"", "id_type":null, "id_disc":null,"id_flow":null, "id_group":null}
+        // отправка на клиент: error or 
+        // {
+        //     "id_log_group": 125,
+        //     "log": {
+        //       "id_group": 1,
+        //       "name_group": "ИСТ-19а",
+        //       "attendance_group": [
+        //         {
+        //           "date": "2023-05-21",
+        //           "type_class": "Л",
+        //           "array_students": [
+        //             {
+        //               "name": "Алина",
+        //               "surname": "Белая",
+        //               "id_student": 19,
+        //               "patronymic": "Юрьевна",
+        //               "presence_class": "-"
+        //             },{} ]}]}}
+        Route::post('/log',  'LogController@getLog'); 
+
+        // отправка на сервер: {"id_user_reg":"39","token":"" }
+        Route::post('/',  'LogController@getListLogs'); 
+    });
+
 });
 
 // отправка на сервер: {"id_user_reg":"39","token":""}

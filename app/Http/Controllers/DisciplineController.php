@@ -8,6 +8,7 @@ use App\Models\File;
 use App\Models\Discipline;
 use Illuminate\Support\Facades\Storage;
 use App\Models\UserTeacher;
+use App\Models\Group;
 
 class DisciplineController extends Controller
 {
@@ -37,9 +38,10 @@ class DisciplineController extends Controller
                     else $ListDisciplinesFlow[$i]["edit_disc"]=false;
 
                     $array_flow_disc = UserTeacher::getArrayDisciplineFlowTeacher("Distinct discipline_flow.id_flow, flow.name as name_flow", 
-                    "(list_disciplines.id_teacher=? or teacher_discipline.id_teacher=?) and list_disciplines.id=?", [$arrayinfotoken->id_teacher_student,$arrayinfotoken->id_teacher_student, $array_disc_teacher[$i]->id_disc]);
+                    "(list_disciplines.id_teacher=? or teacher_discipline.id_teacher=?) and list_disciplines.id=?", 
+                    [$arrayinfotoken->id_teacher_student,$arrayinfotoken->id_teacher_student, $array_disc_teacher[$i]->id_disc]);
                     
-                    if (count($array_flow_disc)==0) $ListDisciplinesFlow[$i]["array_flow"]=null;
+                    if ($array_flow_disc[0]->id_flow==null) $ListDisciplinesFlow[$i]["array_flow"]=null;
                     else
                     {
                         for ($j=0; $j<count($array_flow_disc);$j++)
@@ -49,7 +51,6 @@ class DisciplineController extends Controller
                     }
                 }
             }
-            
             return response()->json($ListDisciplinesFlow);
         }   
     }
@@ -67,7 +68,9 @@ class DisciplineController extends Controller
             if(count($Seachdisc)>0)  return response()->json(["error"=>"Дисциплина с таким именем уже существует."]);
             else
             {
-                
+                if ($request->input('id_faculty')==null || $request->input('id_institute')==null || $request->input('id_department')==null) return response()->json(["error"=>"Не совершен выбор института/факультета/кафедры."]);
+                else 
+                {
                 // добавление дисциплины в т. list_disciplines
                 $id_newdisc = User::getIdInsertRecord(array("name"=>$request->input('name_disc'), "id_institute_db_univ"=>$request->input('id_institute'), "id_faculty_db_univ"=>$request->input('id_faculty'),
                 "id_department_db_univ"=>$request->input('id_department'), "id_teacher"=>$arrayinfotoken->id_teacher_student, "fon"=>"defaultimage/default_fon_discipline.png"),"list_disciplines");
@@ -77,6 +80,7 @@ class DisciplineController extends Controller
                 Storage::disk('mypublicdisk')->makeDirectory($pathdir);
                 User::UpdateColumn("list_disciplines",['list_disciplines.id','=',$id_newdisc], ["list_disciplines.folder"=>$pathdir]);
                 return response()->json(["info"=>"Добавление дисциплины прошло успешно."]);
+                }
             }
         }
     }
@@ -155,13 +159,17 @@ class DisciplineController extends Controller
                 $folder = User::SearchRecordbyId("list_disciplines",['folder'], 'id',$request->input('id_disc'));
                 $pathdir = $this->createpathdir($folder->folder."/",$id_discflow, $request->input('name_flow'));
                 Storage::disk('mypublicdisk')->makeDirectory($pathdir);
-
+                
                 User::UpdateColumn("discipline_flow",['discipline_flow.id','=',$id_discflow], ["folder"=>$pathdir]);
 
+                // создание журнала посещаемости
+                $this->createlog(1,$id_discflow,$request->input('id_flow'));
+                
                 if ($request->input('teachers')!=null)
                 {
                     // добавление преподавателей в поток дисциплины
-                    User::InsertRecord(array_map(function ($object)  use (&$id_discflow) { return array("id_discipline_flow" => $id_discflow, "id_teacher" => $object); },  $request->input('teachers')), "teacher_discipline");
+                    User::InsertRecord(array_map(function ($object)  use (&$id_discflow) { return array("id_discipline_flow" => $id_discflow, "id_teacher" => $object); },  
+                    $request->input('teachers')), "teacher_discipline");
                 }
                 return response()->json(["info"=>"Добавление потока в дисциплину прошло успешно."]);
             }
@@ -203,9 +211,9 @@ class DisciplineController extends Controller
                     if ($i==0)  { $id_teacher = $bufdataflow[$i]->id_creator; $creator=true; }
                     else  {  $id_teacher = $bufdataflow[$i-1]->id_teacher; $creator=false;   }
                     
-                    $buf = User::getDataUser("teacher", ['surname','name','patronymic','email','phone'], 'teacher.id_user', "teacher.id", $id_teacher);
-                    $flow['arrayteacher'][$i]=array("id_teacher"=>$id_teacher,"surname"=>$buf->surname, "name"=>$buf->name,
-                    "patronymic"=>$buf->patronymic,"email"=>$buf->email,"phone"=>$buf->phone,"creator"=>$creator);
+                    $buf = User::getDataObject("teacher", ['surname','name','patronymic','email','phone'], "user", "user.id",'teacher.id_user',  "teacher.id", $id_teacher);
+                    $flow['arrayteacher'][$i]=array("id_teacher"=>$id_teacher,"surname"=>$buf[0]->surname, "name"=>$buf[0]->name,
+                    "patronymic"=>$buf[0]->patronymic,"email"=>$buf[0]->email,"phone"=>$buf[0]->phone,"creator"=>$creator);
                 }
             }
             return response()->json($flow);
@@ -242,4 +250,51 @@ class DisciplineController extends Controller
         }
     }
 
+    // создание журнала 
+    public function createlogbuf(Request $request)
+    {
+        // добавление в log_disc_flow
+        $id_log = User::getIdInsertRecord(array("id_disc_flow"=>$request->input('id_disc_flow'),"id_type_log"=>1),"log_disc_flow");
+        // получение списка групп потока
+        $groups_flow = User::getDataObject("flow", ['id_group'], "flow_group", "flow.id",'flow_group.id_flow',  "flow.id", $request->input('id_flow'));
+    
+        // добавление в log_group
+        for ($i=0; $i<count($groups_flow); $i++)
+        {
+            $id_log_group = User::getIdInsertRecord( array("id_log"=>$id_log, "id_group" => $groups_flow[$i]->id_group), "log_group");
+            $name_group = User::SearchRecordbyId("group", 'name', "id", $groups_flow[$i]->id_group);
+            $listStudents = Group::getListStudentsIdGroup($groups_flow[$i]->id_group);
+            for ($j=0; $j<count($listStudents); $j++) $listStudents[$j]->presence_class="-";
+            $file_log_attend_group_json=File::create_file_log_attend_group_json($id_log_group,$groups_flow[$i]->id_group,$name_group->name,$listStudents);
+            User::UpdateColumn("log_group",['id','=',$id_log_group], ["log_group_json"=>$file_log_attend_group_json]);
+        }
+    }
+
+    // создание журнала (посещаемости или успеваемости)
+    public function createlog($id_type_log,$id_disc_flow,$id_flow)
+    {
+        // добавление в log_disc_flow
+        $id_log = User::getIdInsertRecord(array("id_disc_flow"=>$id_disc_flow,"id_type_log"=>$id_type_log),"log_disc_flow");
+        // получение списка групп потока
+        $groups_flow = User::getDataObject("flow", ['id_group'], "flow_group", "flow.id",'flow_group.id_flow',  "flow.id", $id_flow);
+    
+        DisciplineController::addinLog_group($groups_flow, $id_type_log, $id_log);
+    }
+
+    public static function addinLog_group($groups_flow, $id_type_log, $id_log)
+    {
+        for ($i=0; $i<count($groups_flow); $i++)
+        {
+            $id_log_group = User::getIdInsertRecord( array("id_log"=>$id_log, "id_group" => $groups_flow[$i]->id_group), "log_group");
+            $name_group = User::SearchRecordbyId("group", 'name', "id", $groups_flow[$i]->id_group);
+            $listStudents = Group::getListStudentsIdGroup($groups_flow[$i]->id_group);
+            if ($id_type_log==1)
+            {
+                for ($j=0; $j<count($listStudents); $j++) $listStudents[$j]->presence_class="-";
+                $file_log_attend_group_json=File::create_file_log_attend_group_json($id_log_group,$groups_flow[$i]->id_group,$name_group->name,$listStudents);
+                User::UpdateColumn("log_group",['id','=',$id_log_group], ["log_group_json"=>$file_log_attend_group_json]);
+            }
+        }
+    }
 }
+

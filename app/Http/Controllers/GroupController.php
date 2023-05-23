@@ -27,7 +27,8 @@ class GroupController extends Controller
         if (count($token_verification)==0) return response()->json(["error" => "Вы не авторизованы. Войдите в систему."]);
         else 
         {  
-            return response()->json(User::getListData(User::$ConnectDBWebsite,'group', ['id as id_group','name as name_group'])); 
+            return response()->json(User::getListData(User::$ConnectDBWebsite,'group', ['group.id as id_group','name as name_group'],'id_flow',$request->input('id_flow'),
+            "flow_group","flow_group.id_group","group.id")); 
         } 
     }
 
@@ -40,7 +41,7 @@ class GroupController extends Controller
         {  
             $listStudents = Group::getListStudentsIdGroup($request->input('id_group'));
             if (count($listStudents)==0) return response()->json(["error" => "Зарегистрированных студентов данный группы в базе не обнаружено."]);
-            else return response()->json(Group::getListStudentsIdGroup($request->input('id_group'))); 
+            else return response()->json($listStudents); 
         } 
     }
 }
