@@ -52,7 +52,7 @@ Route::prefix('/teacher')->group(function ()
         //           "name_flow": "Поток6"
         //         }
         //       ]
-        //     }, {} ]
+        //     }, {} ] - весь список или с фильтрацией
         Route::post('/', 'DisciplineController@ListDisciplines'); // +++
 
         // отправка на сервер: {"id_user_reg":"39","token":"", "id_institute":null, "id_faculty":null, "id_department":null, "name_disc":null}
@@ -143,13 +143,13 @@ Route::prefix('/teacher')->group(function ()
     //   }
     Route::post('/profile', 'GeneralTeacherController@DataProfile'); // +++
     // отправка на сервер: {"id_user_reg":"39","token":"","id_institute":1}
-    // отправка на клиент: "error" or [ { "id_institute": 1, "name_institute": "Горного дела и геологии"}, {} ]
+    // отправка на клиент: "error" or [ { "id_institute": 1, "name_institute": "Горного дела и геологии"}, {} ] - весь список или по фильтрации
     Route::post('/institutions', 'GeneralTeacherController@ListInstitutions'); // +++
     // отправка на сервер: {"id_user_reg":"39","token":"","id_institute":null,"id_faculty":null}
-    // отправка на клиент: "error" or [ { "id_faculty": 9, "name_faculty": "Интеллектуальных систем и программирования"  }, {}]
+    // отправка на клиент: "error" or [ { "id_faculty": 9, "name_faculty": "Интеллектуальных систем и программирования"  }, {}] - весь список или по фильтрации
     Route::post('/faculties',    'GeneralTeacherController@ListFaculties'); // +++
     // отправка на сервер: {"id_user_reg":"39","token":"","id_institute":null, "id_faculty":null, "id_department":null}
-    // отправка на клиент: "error" or [ { "id_department": 1, "name_department": "автоматизированных систем управления" }, {}]
+    // отправка на клиент: "error" or [ { "id_department": 1, "name_department": "автоматизированных систем управления" }, {}] - весь список или по фильтрации
     Route::post('/departments',  'GeneralTeacherController@ListDepartments'); // +++
     
     // отправка на сервер: {"id_user_reg":"39","token":""} 
@@ -165,7 +165,7 @@ Route::prefix('/teacher')->group(function ()
     //     "institute": "Компьютерных наук и технологий",
     //     "faculty": "Информационных систем и технологий",
     //     "department": "автоматизированных систем управления"
-    //   }, {} ]
+    //   }, {} ] весь список групп или по фильтрации
     Route::post('/groupsinfo',  'GroupController@ListGroupsInfo'); // +++
     // отправка на сервер: {"id_user_reg":"39","token":"", "id_group":1 }
     // отправка на клиент:  "error" or
@@ -175,15 +175,15 @@ Route::prefix('/teacher')->group(function ()
     //       "surname": "Белая",
     //       "name": "Алина",
     //       "patronymic": "Юрьевна"
-    //     }, {} ]
+    //     }, {} ] по фильтрации 
     Route::post('/students',  'GroupController@ListStudentsGroup'); // +++
-    // отправка на сервер: {"id_user_reg":"39","token":"", id_flow:null}
+    // отправка на сервер: {"id_user_reg":"39","token":"", id_flow:null} - 
     // отправка на клиент:  "error" or
     // [
     //     {
     //       "id_group": 1,
     //       "name_group": "ИСТ-19а"
-    //     }, {} ]
+    //     }, {} ] - весь список групп или по id_flow
     Route::post('/groups',  'GroupController@ListGroups'); // +++
 
     // отправка на сервер: {"id_user_reg":"39","token":""}
@@ -212,21 +212,9 @@ Route::prefix('/teacher')->group(function ()
     //           "name_disc": "Дисциплина4"
     //         }
     //       ]
-    //     }, {} ]
+    //     }, {} ] - весь список или по фильтрам
     Route::post('/flows',  'FlowController@ListFlow'); // +++
-    // отправка на сервер: {"id_user_reg":"39","token":"", "id_flow":1 }
-    // отправка на клиент:  "error" or
-    // {
-    //     "id_flow": 1,
-    //     "name_flow": "Поток1",
-    //     "groups": [
-    //       {
-    //         "id_group": 1,
-    //         "name_group": "ИСТ-19а"
-    //       }, {},{}
-    //     ]
-    //   }
-    Route::post('/groupsflow',  'FlowController@ListGroupsFlow'); // +++
+
     // отправка на сервер: {"id_user_reg":"39","token":"", ,"name_flow":"new_name","groups":[1,2] - array}
     // отправка на клиент: "error" or "info"
     Route::post('/createflow',  'FlowController@ResultCreateFlow'); // +++

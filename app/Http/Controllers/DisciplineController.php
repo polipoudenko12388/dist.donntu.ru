@@ -22,8 +22,9 @@ class DisciplineController extends Controller
         else
         {
             $arrayinfotoken=AuthorizationController::decodeToken($request->input('token'));
-            $array_disc_teacher = UserTeacher::getArrayDisciplineFlowTeacher("Distinct list_disciplines.id as id_disc, list_disciplines.name as name_disc, list_disciplines.id_teacher as id_teacher_creator, 
-            fon, id_institute_db_univ, id_faculty_db_univ, id_department_db_univ", "(list_disciplines.id_teacher=? or teacher_discipline.id_teacher=?)", 
+            $array_disc_teacher = UserTeacher::getArrayDisciplineFlowTeacher("Distinct list_disciplines.id as id_disc, list_disciplines.name as name_disc, 
+            list_disciplines.id_teacher as id_teacher_creator, fon, id_institute_db_univ, id_faculty_db_univ, id_department_db_univ", 
+            "(list_disciplines.id_teacher=? or teacher_discipline.id_teacher=?)", 
             [$arrayinfotoken->id_teacher_student,$arrayinfotoken->id_teacher_student], $request->input("name_disc"),$request->input("id_disc"));
             
             if (count($array_disc_teacher)==0) $ListDisciplinesFlow=null;
@@ -66,6 +67,7 @@ class DisciplineController extends Controller
             // проверка, сущ. ли дисциплина с таким же именем, как добавляемая
             $Seachdisc =  User::SeachRecordsbyWhere("list_disciplines", "name=?", [$request->input('name_disc')]);
             if(count($Seachdisc)>0)  return response()->json(["error"=>"Дисциплина с таким именем уже существует."]);
+            else if (trim($request->input('name_disc'))==null)  return response()->json(["error"=>"Добавьте название дисциплины перед ее созданием."]);
             else
             {
                 if ($request->input('id_faculty')==null || $request->input('id_institute')==null || $request->input('id_department')==null) return response()->json(["error"=>"Не совершен выбор института/факультета/кафедры."]);
@@ -119,21 +121,27 @@ class DisciplineController extends Controller
              if(count($Seachdisc)>0)  return response()->json(["error"=>"Дисциплина с таким именем уже существует."]);
              else
              {
-                //  изменение имени папки дисциплины
-                $folder = User::SearchRecordbyId("list_disciplines",['folder'], 'id',$request->input('id_disc'));
-                $newpathdir = $this->createpathdir("disciplines/",$request->input('id_disc'), $request->input('new_name'));
-                Storage::disk('mypublicdisk')->move($folder->folder, $newpathdir);
-                
-                // обновление данных дисциплины
-                User::UpdateColumn("list_disciplines", ['list_disciplines.id','=',$request->input('id_disc')], 
-                ["name"=>$request->input('new_name'),"id_institute_db_univ"=>$request->input('id_institute'),
-                "id_faculty_db_univ"=>$request->input('id_faculty'),"id_department_db_univ"=>$request->input('id_department'),"folder"=>$newpathdir]);
-
+                if (trim($request->input('new_name'))!=null)
+                {
+                    if ($request->input('id_faculty')==null || $request->input('id_institute')==null || $request->input('id_department')==null) return response()->json(["error"=>"Не совершен выбор института/факультета/кафедры."]);
+                    else 
+                    {
+                        //  изменение имени папки дисциплины
+                        $folder = User::SearchRecordbyId("list_disciplines",['folder'], 'id',$request->input('id_disc'));
+                        $newpathdir = $this->createpathdir("disciplines/",$request->input('id_disc'), $request->input('new_name'));
+                        Storage::disk('mypublicdisk')->move($folder->folder, $newpathdir);
+                        
+                        // обновление данных дисциплины
+                        User::UpdateColumn("list_disciplines", ['list_disciplines.id','=',$request->input('id_disc')], 
+                        ["name"=>$request->input('new_name'),"id_institute_db_univ"=>$request->input('id_institute'),
+                        "id_faculty_db_univ"=>$request->input('id_faculty'),"id_department_db_univ"=>$request->input('id_department'),"folder"=>$newpathdir]);
+                    }
+                }
                 if ($request->input('id_new_creator')!=null)
                 {  
                     User::UpdateColumn("list_disciplines", ['list_disciplines.id','=',$request->input('id_disc')],  ["id_teacher"=>$request->input('id_new_creator')]);
                 }
-
+                
                 return response()->json(["info"=>"Редактирование дисциплины прошло успешно."]);  
              } 
          }
@@ -203,18 +211,17 @@ class DisciplineController extends Controller
         {
             $bufdataflow = Discipline::getListTeachersFlow($request->input('id_disc'),$request->input('id_flow'));
             $flow=array("id_disc_flow"=>$bufdataflow[0]->id_disc_flow, "name_flow"=>$bufdataflow[0]->name_flow,"number_hours_reading"=>$bufdataflow[0]->number_hours_reading);
-            if ($bufdataflow[0]->id_teacher!=null)
+           
+            if ($bufdataflow[0]->id_teacher!=null) $count=count($bufdataflow)+1;
+            else $count=count($bufdataflow);
+            for ($i=0;$i<$count;$i++)
             {
-
-                for ($i=0;$i<=count($bufdataflow);$i++)
-                {
-                    if ($i==0)  { $id_teacher = $bufdataflow[$i]->id_creator; $creator=true; }
-                    else  {  $id_teacher = $bufdataflow[$i-1]->id_teacher; $creator=false;   }
+                if ($i==0)  { $id_teacher = $bufdataflow[$i]->id_creator; $creator=true; }
+                else        { $id_teacher = $bufdataflow[$i-1]->id_teacher; $creator=false; }
                     
-                    $buf = User::getDataObject("teacher", ['surname','name','patronymic','email','phone'], "user", "user.id",'teacher.id_user',  "teacher.id", $id_teacher);
-                    $flow['arrayteacher'][$i]=array("id_teacher"=>$id_teacher,"surname"=>$buf[0]->surname, "name"=>$buf[0]->name,
-                    "patronymic"=>$buf[0]->patronymic,"email"=>$buf[0]->email,"phone"=>$buf[0]->phone,"creator"=>$creator);
-                }
+                $buf = User::getDataObject("teacher", ['surname','name','patronymic','email','phone'], "user", "user.id",'teacher.id_user',  "teacher.id", $id_teacher);
+                $flow['arrayteacher'][$i]=array("id_teacher"=>$id_teacher,"surname"=>$buf[0]->surname, "name"=>$buf[0]->name,
+                "patronymic"=>$buf[0]->patronymic,"email"=>$buf[0]->email,"phone"=>$buf[0]->phone,"creator"=>$creator);
             }
             return response()->json($flow);
         }
@@ -278,7 +285,7 @@ class DisciplineController extends Controller
         // получение списка групп потока
         $groups_flow = User::getDataObject("flow", ['id_group'], "flow_group", "flow.id",'flow_group.id_flow',  "flow.id", $id_flow);
     
-        DisciplineController::addinLog_group($groups_flow, $id_type_log, $id_log);
+        if (count($groups_flow)>0) DisciplineController::addinLog_group($groups_flow, $id_type_log, $id_log);
     }
 
     public static function addinLog_group($groups_flow, $id_type_log, $id_log)

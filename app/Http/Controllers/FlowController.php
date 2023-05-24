@@ -29,7 +29,7 @@ class FlowController extends Controller
             $array_flows = Flow::getListDataFlow(['flow.id as id_flow', 'flow.name as name_flow', 'flow.id_creator as id_creator','surname', 'user.name as name_teacher'],
             $request->input('id_creator'), $request->input('id_group'),$request->input('name_flow'));
             
-            if (count($array_flows)==0) $ListFlow=null;
+            if (count($array_flows)==0) return response()->json(["error" => "На данный момент потоки в системе отсутствуют."]);
             else 
             {
                 for ($i=0; $i<count($array_flows); $i++) 
@@ -48,23 +48,9 @@ class FlowController extends Controller
                         }
                     }
                 }
+            return response()->json($ListFlow);
             }
-
-            return response()->json($ListFlow); 
-        }      
-    }
-
-    public function ListGroupsFlow(Request $request)
-    {
-        // проверка токена
-        $token_verification = GeneralUserController::VerifactionToken($request->input('id_user_reg'),$request->input('token'));
-        if (count($token_verification)==0) return response()->json(["error" => "Вы не авторизованы. Войдите в систему."]);
-        else 
-        { 
-            $data_flow = User::SeachRecordsbyWhere("flow", "flow.id=?", $request->input('id_flow'));
-            $result['id_flow']=$data_flow[0]->id; $result['name_flow']=$data_flow[0]->name;
-            $result['groups']=Flow::getListGroupsFlowId($request->input('id_flow'));
-            return response()->json($result); 
+         
         }      
     }
 
@@ -80,6 +66,7 @@ class FlowController extends Controller
             // проверка, сущ. ли поток с таким же именем, как добавляемый
             $Seachflow =  User::SeachRecordsbyWhere("flow", "flow.name=?", [$request->input('name_flow')]);
             if(count($Seachflow)>0)  return response()->json(["error"=>"Поток с таким именем уже существует."]);
+            else if (trim($request->input('name_flow'))==null) return response()->json(["error"=>"Введите название потока перед созданием."]);
             else
             {
                 // добавление потока в т. flow
@@ -138,9 +125,13 @@ class FlowController extends Controller
        $token_verification = GeneralUserController::VerifactionToken($request->input('id_user_reg'),$request->input('token'));
        if (count($token_verification)==0) return response()->json(["error" => "Вы не авторизованы. Войдите в систему."]);
        else  
-       { 
-           User::UpdateColumn("flow", ['flow.id','=',$request->input('id_flow')], ["flow.name"=>$request->input('new_name')]);
-           return response()->json(["info"=>"Обновление названия потока прошло успешно."]);  
+       {
+            if (trim($request->input('new_name'))==null) return response()->json(["error"=>"Обновление потока не было совершено."]);
+            else 
+            {
+                User::UpdateColumn("flow", ['flow.id','=',$request->input('id_flow')], ["flow.name"=>$request->input('new_name')]);
+                return response()->json(["info"=>"Обновление названия потока прошло успешно."]); 
+            } 
        }
     }
 

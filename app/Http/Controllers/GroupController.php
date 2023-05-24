@@ -15,8 +15,9 @@ class GroupController extends Controller
         if (count($token_verification)==0) return response()->json(["error" => "Вы не авторизованы. Войдите в систему."]);
         else 
         {  
-            return response()->json(Group::getListGroupInfo($request->input('id_institute'),$request->input('id_faculty'),
-            $request->input('id_department'),$request->input('namegroup'))); 
+            $listgroups = Group::getListGroupInfo($request->input('id_institute'),$request->input('id_faculty'),$request->input('id_department'),$request->input('namegroup'));
+            if (count($listgroups)==0) return response()->json(["error" => "На данный момент группы отсутствуют. Ожидайте обновления."]);
+            else return response()->json($listgroups);
         } 
     }
 
@@ -27,8 +28,10 @@ class GroupController extends Controller
         if (count($token_verification)==0) return response()->json(["error" => "Вы не авторизованы. Войдите в систему."]);
         else 
         {  
-            return response()->json(User::getListData(User::$ConnectDBWebsite,'group', ['group.id as id_group','name as name_group'],'id_flow',$request->input('id_flow'),
-            "flow_group","flow_group.id_group","group.id")); 
+            $listgroups = User::getListData(User::$ConnectDBWebsite,'group', ['group.id as id_group','name as name_group'],'id_flow',$request->input('id_flow'),
+            "flow_group","flow_group.id_group","group.id");
+            if (count($listgroups)==0) return response()->json(["error" => "На данный момент группы отсутствуют. Ожидайте обновления."]);
+            else return response()->json($listgroups); 
         } 
     }
 
