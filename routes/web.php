@@ -249,10 +249,21 @@ Route::prefix('/teacher')->group(function ()
         //   ]
         Route::post('/typelogs',  'LogController@ListTypeLogs'); 
 
+        // отправка на сервер: {"id_user_reg":"39","token":""}
+        // отправка на клиент: "error" or
+        // [
+        //     {
+        //       "id_type": 1,
+        //       "name_type": "Л"
+        //     }, {} 
+        // ]
+        Route::post('/typeclass',  'LogController@ListTypeClass'); 
+
         // отправка на сервер: {"id_user_reg":"39","token":"", "id_type":null, "id_disc":null,"id_flow":null, "id_group":null}
         // отправка на клиент: error or 
         // {
         //     "id_log_group": 125,
+        //     "id_teacher_edit": null,
         //     "log": {
         //       "id_group": 1,
         //       "name_group": "ИСТ-19а",
@@ -267,11 +278,17 @@ Route::prefix('/teacher')->group(function ()
         //               "id_student": 19,
         //               "patronymic": "Юрьевна",
         //               "presence_class": "-"
-        //             },{} ]}]}}
-        Route::post('/log',  'LogController@getLog'); 
+        //             },{} ]}]}} - только фильтрация
+        Route::post('/',  'LogController@getLog'); 
 
-        // отправка на сервер: {"id_user_reg":"39","token":"" }
-        Route::post('/',  'LogController@getListLogs'); 
+        // отправка на сервер: {"id_user_reg":"39","token":"", "id_log_group": 125, "log":null}
+        // отправка на клиент: error or 
+        Route::post('/updatelog',  'LogController@ResultUpdateLog'); 
+
+        // отправка на сервер: {"id_user_reg":"39","token":"", "id_log_group": 132}
+        // отправка на клиент: error or 
+        Route::post('/permitedit',  'LogController@ResultPermitEditLog'); 
+
     });
 
 });

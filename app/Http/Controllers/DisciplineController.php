@@ -27,31 +27,29 @@ class DisciplineController extends Controller
             "(list_disciplines.id_teacher=? or teacher_discipline.id_teacher=?)", 
             [$arrayinfotoken->id_teacher_student,$arrayinfotoken->id_teacher_student], $request->input("name_disc"),$request->input("id_disc"));
             
-            if (count($array_disc_teacher)==0) $ListDisciplinesFlow=null;
-            else
-            {
-                for ($i=0; $i<count($array_disc_teacher); $i++) 
-                { 
-                    $ListDisciplinesFlow[$i]=array("id_disc"=>$array_disc_teacher[$i]->id_disc, "name_disc"=>$array_disc_teacher[$i]->name_disc, "id_teacher_creator"=>$array_disc_teacher[$i]->id_teacher_creator, 
-                    "fon"=>(Storage::disk('mypublicdisk')->url($array_disc_teacher[$i]->fon)), "id_institute"=>$array_disc_teacher[$i]->id_institute_db_univ, "id_faculty"=>$array_disc_teacher[$i]->id_faculty_db_univ, 
-                    "id_department"=>$array_disc_teacher[$i]->id_department_db_univ);
-                    if ($array_disc_teacher[$i]->id_teacher_creator == $arrayinfotoken->id_teacher_student) $ListDisciplinesFlow[$i]["edit_disc"]=true; 
-                    else $ListDisciplinesFlow[$i]["edit_disc"]=false;
+            $ListDisciplinesFlow = [];
+            for ($i=0; $i<count($array_disc_teacher); $i++) 
+            { 
+                $ListDisciplinesFlow[$i]=array("id_disc"=>$array_disc_teacher[$i]->id_disc, "name_disc"=>$array_disc_teacher[$i]->name_disc, "id_teacher_creator"=>$array_disc_teacher[$i]->id_teacher_creator, 
+                "fon"=>(Storage::disk('mypublicdisk')->url($array_disc_teacher[$i]->fon)), "id_institute"=>$array_disc_teacher[$i]->id_institute_db_univ, "id_faculty"=>$array_disc_teacher[$i]->id_faculty_db_univ, 
+                "id_department"=>$array_disc_teacher[$i]->id_department_db_univ);
+                if ($array_disc_teacher[$i]->id_teacher_creator == $arrayinfotoken->id_teacher_student) $ListDisciplinesFlow[$i]["edit_disc"]=true; 
+                else $ListDisciplinesFlow[$i]["edit_disc"]=false;
 
-                    $array_flow_disc = UserTeacher::getArrayDisciplineFlowTeacher("Distinct discipline_flow.id_flow, flow.name as name_flow", 
-                    "(list_disciplines.id_teacher=? or teacher_discipline.id_teacher=?) and list_disciplines.id=?", 
-                    [$arrayinfotoken->id_teacher_student,$arrayinfotoken->id_teacher_student, $array_disc_teacher[$i]->id_disc]);
+                $array_flow_disc = UserTeacher::getArrayDisciplineFlowTeacher("Distinct discipline_flow.id_flow, flow.name as name_flow", 
+                "(list_disciplines.id_teacher=? or teacher_discipline.id_teacher=?) and list_disciplines.id=?", 
+                [$arrayinfotoken->id_teacher_student,$arrayinfotoken->id_teacher_student, $array_disc_teacher[$i]->id_disc]);
                     
-                    if ($array_flow_disc[0]->id_flow==null) $ListDisciplinesFlow[$i]["array_flow"]=null;
-                    else
+                if ($array_flow_disc[0]->id_flow==null) $ListDisciplinesFlow[$i]["array_flow"]=null;
+                else
+                {
+                    for ($j=0; $j<count($array_flow_disc);$j++)
                     {
-                        for ($j=0; $j<count($array_flow_disc);$j++)
-                        {
-                            $ListDisciplinesFlow[$i]["array_flow"][$j] = array("id_flow"=>$array_flow_disc[$j]->id_flow, "name_flow"=>$array_flow_disc[$j]->name_flow);
-                        }
+                        $ListDisciplinesFlow[$i]["array_flow"][$j] = array("id_flow"=>$array_flow_disc[$j]->id_flow, "name_flow"=>$array_flow_disc[$j]->name_flow);
                     }
                 }
             }
+            
             return response()->json($ListDisciplinesFlow);
         }   
     }
