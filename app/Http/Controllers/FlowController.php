@@ -105,7 +105,7 @@ class FlowController extends Controller
                 // удаление групп потока в т. flow_group
                 User::DeleteRecord("flow_group","id_flow=?",[$request->input('id_flow')], 'id_group', $request->input('groups'));
 
-                // добавлен ли этот поток в диссциплину 
+                // добавлен ли этот поток в дисциплину 
                 $buf = Log::SearchGroupsFlowinLog(['log_group.id as id_log_group'],$request->input('id_flow'), $request->input('groups'));
                 if (count($buf)>0)
                 {
@@ -147,12 +147,23 @@ class FlowController extends Controller
                 $this->InsertRecordFlowGroup($request->input('id_flow'),$request->input('groups'));
                 
                 // добавлен ли этот поток в дисциплину 
-                $buf = Log::SearchGroupsFlowinLog(['log_disc_flow.id as id_log'],$request->input('id_flow'),null,true);
+                $buf = Log::SearchGroupsFlowinLog(['log_disc_flow.id as id_log','log_disc_flow.id_type_log'],$request->input('id_flow'),null,true);
                 if (count($buf)>0)
                 {
-                    // создание журнала в log_group для новых групп данного потока дисциплины
-                    for ($i=0; $i<count($buf);$i++) DisciplineController::addinLog_group(collect(array_map(function ($object) { return (object)["id_group"=>$object]; },
-                    $request->input('groups'))), 1, $buf[$i]->id_log);
+                    // создание журнала посещаемости в log_group для новых групп данного потока дисциплины
+                    for ($i=0; $i<count($buf);$i++)
+                    {
+                        if ($buf[$i]->id_type_log==1)
+                        {
+                            DisciplineController::addinLog_group(collect(array_map(function ($object) { return (object)["id_group"=>$object]; },
+                            $request->input('groups'))), 1, $buf[$i]->id_log);
+                        }
+                        else
+                        {
+                            DisciplineController::addinLog_group(collect(array_map(function ($object) { return (object)["id_group"=>$object]; },
+                            $request->input('groups'))), 2, $buf[$i]->id_log);
+                        }
+                    }
                 }
                 return response()->json(["info"=>"Добавление новых групп потока прошло успешно."]);
             }

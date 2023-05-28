@@ -32,7 +32,7 @@ class File extends Model
     }
 
 	// создание json файла посещаемости (при добавлении потока в дисциплину)
-	public static function create_file_log_attend_group_json($id_log_group,$id_group,$name_group,$array_students)
+	public static function create_file_log_attend_group_json($id_group,$name_group,$array_students)
 	{
 		$log_attend_group = 
 		[
@@ -47,4 +47,45 @@ class File extends Model
 		]; 
 		return json_encode($log_attend_group);
 	}
+
+	
+		// создание json файла успеваемости (при добавлении потока в дисциплину)
+		public static function create_file_gradebook($name_group,$array_students_types_control, $array_students_intersessional_control, $array_students_passes,$array_students_offset,$array_students_exam)
+		{
+			$gradebook_group = 
+			[
+				"name_group" => $name_group,
+				"tasks" => [], // лабораторные
+				"other_types_control" => // другие виды котроля
+				[
+					[
+						"name_control" => " дефолтное задание1",
+						"array_students" => $array_students_types_control
+					]
+				],
+				"Control_educational_process" => // Контроль учебно-воспитательного процесса
+				[
+					"intersessional_control"=> //МСК
+					[
+						"array_students" => $array_students_intersessional_control
+					],
+					"passes"=> // пропуски
+					[
+						"array_students" => $array_students_passes
+					]
+				],
+				"Results_control_educational_process" => // Итоги контроля учебно-воспитательного процесса
+				[
+					"offset" => // зачет
+					[
+						"array_students" => $array_students_offset
+					],
+					"exam" => // экзамен
+					[
+						"array_students" => $array_students_exam
+					]
+				]
+			]; 
+			return json_encode($gradebook_group);
+		}
 }

@@ -101,12 +101,66 @@ Route::prefix('/teacher')->group(function ()
        
         Route::prefix('/posts')->group(function ()
         {
-            // отправка на сервер: {"id_user_reg":"39","token":"", id_disc_flow:null, "id_teacher_creator":null, text:null,attendance_button:true,
-            // date_end_button: "2023-05-22 15:15:00", id_type_class:""}
+            // отправка на сервер: {"id_user_reg":39, "token":"", "id_disc_flow":22, "text":"hello2", "attendance_button":true, 
+            // "date_end_button":"2023-05-25 15:15:00", "id_type_class":1, "files":[] }
+            // отправка на клиент: "error" or "info"
             Route::post('/createpost', 'PostController@ResultCreatePost');
 
+            // отправка на сервер: {"id_user_reg":39, "token":"", "id_post":null }
+            // отправка на клиент: "error" or "info"
+            Route::post('/deletepost', 'PostController@ResultDeletePost');
+            
+            // отправка на сервер: {"id_user_reg":39, "token":"", "id_post":null,"text":null, "files":[]}
+            // отправка на клиент: "error" or "info"
+            Route::post('/editpost', 'PostController@ResultEditPost');
+
+            // отправка на сервер: {"id_user_reg":39, "token":"", "id_disc_flow":22}
+            // отправка на клиент: "error" or 
+            // [
+            //     {
+            //         "id_post": 17,
+            //         "id_disc_flow": 22,
+            //         "id_teacher_creator": 9,
+            //         "date_create_post": "2023-05-26 00:31:58", // при редактировании поста обновляется дата 
+            //         "id_type_post": 1, // 1-сообщение, может редактироваться, 2 тип - нет
+            //         "text": null,
+            //         "attendance_button": false,
+            //         "date_end_button": null,
+            //         "edit": true, // был ли уже отредактирован пост (true/false)
+            //         "surname__teacher_creator": "Теплова",
+            //         "name__teacher_creator": "Ольга",
+            //         "patronymic__teacher_creator": "Валентиновна",
+            //         "files": [
+            //           "http://dist.donntu.ru:3030/storage/fileserver/disciplines/id23Disciplina1_20230517_160849/id22Potok1_20230517_162857/posts/postid17/2.txt",
+            //           "http://dist.donntu.ru:3030/storage/fileserver/disciplines/id23Disciplina1_20230517_160849/id22Potok1_20230517_162857/posts/postid17/spisok_gruppy.jpg",
+            //           "http://dist.donntu.ru:3030/storage/fileserver/disciplines/id23Disciplina1_20230517_160849/id22Potok1_20230517_162857/posts/postid17/svoystva_konteynerov.docx"
+            //         ]
+            //       }, 
+            // {"files":[]} ]
+            Route::post('/', 'PostController@ListPosts');
         });
 
+        Route::prefix('/educatmaterial')->group(function ()
+        {
+            // отправка на сервер: {"id_user_reg":39, "token":"", "id_disc_flow":22, 
+            // "topic_material":"Тема материала", "id_type_material":"1", "id_type_assessment":1, 
+            // "date_assignment":"2023-05-25", "max_score":5,"min_score":1, "files":[] }
+            // отправка на клиент: "error" or "info"
+            Route::post('/addmaterial', 'EducatationMaterialController@ResultAddMaterial');
+
+
+            // удаление самого задания 
+            // отправка на сервер: {"id_user_reg":39, "token":"","id_educat_material":null }
+            // отправка на клиент: "error" or "info"
+            Route::post('/deletetask', 'EducatationMaterialController@ResultDeleteMaterialTasks');
+        
+            // редактирование задания 
+            // отправка на сервер: {"id_user_reg":39, "token":"","id_disc_flow":22, "id_educat_material":null, "topic_material":"Тема материала", "id_type_assessment":1, 
+            // "date_assignment":"2023-05-25", "max_score":5,"min_score":1, "files":[]}
+            // отправка на клиент: "error" or "info"
+            Route::post('/edittask', 'EducatationMaterialController@ResultEditMaterialTasks');
+        });
+        
         // для полины 
         Route::post('/createlog', 'DisciplineController@createlogbuf'); // +++
         
@@ -291,6 +345,56 @@ Route::prefix('/teacher')->group(function ()
 
     });
 
+     // отправка на сервер: {"id_user_reg":"39","token":""}
+     // отправка на клиент: error or
+    //  [
+    //     {
+    //       "id_type": 1,
+    //       "name_type": "Лабораторная"
+    //     },
+    //     {
+    //       "id_type": 2,
+    //       "name_type": "Лекция"
+    //     }
+    //   ]
+    Route::post('/type_material',  'EducatationMaterialController@ListTypeMaterial'); 
+
+
+    // отправка на сервер: {"id_user_reg":"39","token":""}
+    // отправка на клиент: error or
+    // [
+    //     {
+    //       "id_type": 1,
+    //       "name_type": "оценка"
+    //     },
+    //     {
+    //       "id_type": 2,
+    //       "name_type": "балл"
+    //     }
+    //   ]
+    Route::post('/type_assessment',  'EducatationMaterialController@ListTypeAssessment'); 
+
+    // отправка на сервер: {"id_user_reg":"39","token":""}
+    // отправка на клиент: error or
+    // [
+    //     {
+    //       "id_type": 1,
+    //       "name_type": "назначено"
+    //     },
+    //     {
+    //       "id_type": 2,
+    //       "name_type": "сдано"
+    //     },
+    //     {
+    //       "id_type": 3,
+    //       "name_type": "с оценкой"
+    //     },
+    //     {
+    //       "id_type": 4,
+    //       "name_type": "доработать"
+    //     }
+    //   ]
+    Route::post('/type_execution',  'EducatationMaterialController@ListTypeExecution'); 
 });
 
 // отправка на сервер: {"id_user_reg":"39","token":""}

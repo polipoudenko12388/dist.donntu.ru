@@ -45,7 +45,7 @@ class User extends Model
          return $result;
      }
 
-      // список данных таблицы (ролей/институтов/факультетов/кафедр)
+      // список данных таблицы (ролей/институтов/факультетов/кафедр и тд)
       public static function getListData($connect, $nametable, $arraynamecolumnprint, $namecolumnsql=null, $value_sql=null,$tablejoin=null, $firstjoin=null,$secondjoin=null)
       {
         return DB::connection($connect)->table($nametable)

@@ -111,7 +111,10 @@ class RegistrationController extends Controller
                             $array_id_log_group=null;
                             foreach ($array_flow_group_student as $item)
                             { 
-                                foreach (Log::SearchGroupsFlowinLog(['log_group.id as id_log_group'],$item->id_flow,[$item->id_group],null) as $item2)  $array_id_log_group[]=$item2;
+                                foreach (Log::SearchGroupsFlowinLog(['log_group.id as id_log_group','log_disc_flow.id_type_log'],$item->id_flow,[$item->id_group],null) as $item2)
+                                {
+                                  $array_id_log_group[]=$item2;
+                                }
                             }
 
                             if (count($array_id_log_group)>0)
@@ -120,14 +123,30 @@ class RegistrationController extends Controller
                                 // цикл по журналам
                                 for ($i=0;$i<count($array_id_log_group);$i++)
                                 {
-                                    $count = User::SeachRecordsbyWhere("log_group", "id=?", [$array_id_log_group[$i]->id_log_group],
-                                    "JSON_LENGTH(log_group_json,'$.attendance_group') as count")[0]->count;
-                                    // цикл по записям в журнале (attendance_group)
-                                    for ($j=0;$j<$count;$j++)
+                                    if ($array_id_log_group[$i]->id_type_log==1)
                                     {
-                                        User::UpdateColumnJson("log_group", "id", $array_id_log_group[$i]->id_log_group, 
-                                        "log_group_json","JSON_ARRAY_APPEND(`log_group_json`, '$.attendance_group[".$j."].array_students', 
-                                        json_object('name','".$dataHuman->surname."','surname','".$dataHuman->name."', 'id_student',".$id_student_teacher.", 'patronymic','".$dataHuman->patronymic."','presence_class', '-'))");
+                                        $this->updatejson($array_id_log_group[$i]->id_log_group,$id_student_teacher,$dataHuman,
+                                        '$.attendance_group',"'presence_class','-'");
+                                    }
+                                    else if ($array_id_log_group[$i]->id_type_log==2)
+                                    {
+                                        $this->updatejson($array_id_log_group[$i]->id_log_group,$id_student_teacher,$dataHuman,
+                                        '$.tasks',"'id_type_execution',null,'type_execution',null,'score',null,'date',null,'folder',null");
+
+                                        $this->updatejson($array_id_log_group[$i]->id_log_group,$id_student_teacher,$dataHuman,
+                                        '$.other_types_control',"'score',null,'date',null");
+
+                                        $this->updatejson($array_id_log_group[$i]->id_log_group,$id_student_teacher,$dataHuman,
+                                        '$.Control_educational_process.intersessional_control',"'passage',null,'date',null");
+
+                                        $this->updatejson($array_id_log_group[$i]->id_log_group,$id_student_teacher,$dataHuman,
+                                        '$.Control_educational_process.passes',"'count',null,'date',null");
+                                    
+                                        $this->updatejson($array_id_log_group[$i]->id_log_group,$id_student_teacher,$dataHuman,
+                                        '$.Results_control_educational_process.offset',"'score',null,'date',null");
+
+                                        $this->updatejson($array_id_log_group[$i]->id_log_group,$id_student_teacher,$dataHuman,
+                                        '$.Results_control_educational_process.exam',"'score',null,'date',null");
                                     }
                                 }
                             }
@@ -143,6 +162,19 @@ class RegistrationController extends Controller
                 }
             }
         }    
+    }
+
+    private function updatejson($id_log_group,$id_student_teacher,$dataHuman,$namecolumnjsonlength,$str_json_object_append)
+    {
+        $count = User::SeachRecordsbyWhere("log_group", "id=?", [$id_log_group],
+        "JSON_LENGTH(log_group_json,'".$namecolumnjsonlength."') as count")[0]->count;
+        for ($j=0;$j<$count;$j++)
+        {
+            User::UpdateColumnJson("log_group", "id", $id_log_group, 
+            "log_group_json","JSON_ARRAY_APPEND(`log_group_json`, '".$namecolumnjsonlength."[".$j."].array_students', 
+            json_object('id_student',".$id_student_teacher.",'name','".$dataHuman->name."','surname','".$dataHuman->surname."', 
+            'patronymic','".$dataHuman->patronymic."',".$str_json_object_append."))");
+        }
     }
     // получение списка ролей
     function getListRole()
