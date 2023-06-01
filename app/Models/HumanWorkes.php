@@ -39,10 +39,10 @@ class HumanWorkes extends Human
         ->join('faculty', 'faculty.id','=','info_inst_facul_depart.id_faculty')
         ->join('department', 'department.id','=','info_inst_facul_depart.id_department')
         ->where('id_human',$id_human)
-            ->where(function ($query)  use (&$id_role_workes)
-            {
-                $query->where('id_role',$id_role_workes)->where('id_status_workes', 5);
-            })->get();
+        ->where(function ($query)  use (&$id_role_workes)
+        {
+            $query->where('id_role',$id_role_workes)->where('id_status_workes', 5);
+        })->get();
 
         return array_merge((array)$DataHuman, array("array_data_workes"=>$DataWorkes));
     }

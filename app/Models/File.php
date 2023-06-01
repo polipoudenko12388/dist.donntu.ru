@@ -50,38 +50,49 @@ class File extends Model
 
 	
 		// создание json файла успеваемости (при добавлении потока в дисциплину)
-		public static function create_file_gradebook($name_group,$array_students_types_control, $array_students_intersessional_control, $array_students_passes,$array_students_offset,$array_students_exam)
+		public static function create_file_gradebook($name_group,$array_tasks,$array_students_types_control, $array_students_intersessional_control, $array_students_passes,$array_students_offset,$array_students_exam)
 		{
 			$gradebook_group = 
 			[
+				"header" => "Лабораторные",
 				"name_group" => $name_group,
-				"tasks" => [], // лабораторные
+				"tasks" => $array_tasks, // лабораторные
 				"other_types_control" => // другие виды котроля
 				[
+					"header" => "Другие виды контроля",
+					"other_tasks" =>
 					[
-						"name_control" => " дефолтное задание1",
-						"array_students" => $array_students_types_control
+						[
+							"name_control" => " дефолтное задание1",
+							"array_students" => $array_students_types_control
+						]
 					]
 				],
 				"Control_educational_process" => // Контроль учебно-воспитательного процесса
 				[
+					"header" => "Контроль учебно-воспитательного процесса",
 					"intersessional_control"=> //МСК
 					[
+						"subhead" => "МСК",
 						"array_students" => $array_students_intersessional_control
 					],
 					"passes"=> // пропуски
 					[
+						"subhead" => "Пропуски",
 						"array_students" => $array_students_passes
 					]
 				],
 				"Results_control_educational_process" => // Итоги контроля учебно-воспитательного процесса
 				[
+					"header" => "Итоги контроля учебно-воспитательного процесса",
 					"offset" => // зачет
 					[
+						"subhead" => "Зачет",
 						"array_students" => $array_students_offset
 					],
 					"exam" => // экзамен
 					[
+						"subhead" => "Экзамен",
 						"array_students" => $array_students_exam
 					]
 				]

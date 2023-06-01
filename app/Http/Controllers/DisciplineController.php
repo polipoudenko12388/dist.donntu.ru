@@ -76,7 +76,7 @@ class DisciplineController extends Controller
                 "id_department_db_univ"=>$request->input('id_department'), "id_teacher"=>$arrayinfotoken->id_teacher_student, "fon"=>"defaultimage/default_fon_discipline.png"),"list_disciplines");
 
                 // создание папки дисциплины
-                $pathdir = $this->createpathdir("disciplines/",$id_newdisc, $request->input('name_disc'));
+                $pathdir = "disciplines/"."id".$id_newdisc."discipline_".date('_Ymd_His');
                 Storage::disk('mypublicdisk')->makeDirectory($pathdir);
                 User::UpdateColumn("list_disciplines",['list_disciplines.id','=',$id_newdisc], ["list_disciplines.folder"=>$pathdir]);
                 return response()->json(["info"=>"Добавление дисциплины прошло успешно."]);
@@ -85,9 +85,9 @@ class DisciplineController extends Controller
         }
     }
 
-    private function createpathdir($path,$id_disc, $namedir)
+    private function createpathdir($path,$id_disc,$id_flow)
     {
-        return $path."id".$id_disc.File::translit($namedir).date('_Ymd_His');
+        return $path."id".$id_disc."Flow_".$id_flow."_".date('_Ymd_His');
     }
 
     public function ResultDeleteDisc(Request $request)
@@ -122,15 +122,10 @@ class DisciplineController extends Controller
                 if ($request->input('id_faculty')==null || $request->input('id_institute')==null || $request->input('id_department')==null)  return response()->json(["error"=>"Не совершен выбор института/факультета/кафедры."]);
                 else 
                 {
-                    //  изменение имени папки дисциплины
-                    $folder = User::SearchRecordbyId("list_disciplines",['folder'], 'id',$request->input('id_disc'));
-                    $newpathdir = $this->createpathdir("disciplines/",$request->input('id_disc'), $request->input('new_name'));
-                    Storage::disk('mypublicdisk')->move($folder->folder, $newpathdir);
-                        
                     // обновление данных дисциплины
                     User::UpdateColumn("list_disciplines", ['list_disciplines.id','=',$request->input('id_disc')], 
                     ["name"=>$request->input('new_name'),"id_institute_db_univ"=>$request->input('id_institute'),
-                    "id_faculty_db_univ"=>$request->input('id_faculty'),"id_department_db_univ"=>$request->input('id_department'),"folder"=>$newpathdir]);
+                    "id_faculty_db_univ"=>$request->input('id_faculty'),"id_department_db_univ"=>$request->input('id_department')]);
                 
                     if ($request->input('id_new_creator')!=null)
                     {
@@ -142,6 +137,7 @@ class DisciplineController extends Controller
          }
     }
 
+    // убрать из запроса  $request->input('name_flow')
     public function ResultAddFlowinDisc(Request $request)
     {
         // проверка токена
@@ -160,7 +156,7 @@ class DisciplineController extends Controller
 
                 // создание папки потока дисциплины
                 $folder = User::SearchRecordbyId("list_disciplines",['folder'], 'id',$request->input('id_disc'));
-                $pathdir = $this->createpathdir($folder->folder."/",$id_discflow, $request->input('name_flow'));
+                $pathdir = $this->createpathdir($folder->folder."/",$id_discflow, $request->input('id_flow'));
                 Storage::disk('mypublicdisk')->makeDirectory($pathdir);
                 
                 User::UpdateColumn("discipline_flow",['discipline_flow.id','=',$id_discflow], ["folder"=>$pathdir]);
@@ -218,7 +214,7 @@ class DisciplineController extends Controller
                 else        { $id_teacher = $bufdataflow[$i-1]->id_teacher; $creator=false; }
                     
                 $buf = User::getDataObject("teacher", ['surname','name','patronymic','email','phone'], "user", "user.id",'teacher.id_user',  "teacher.id", $id_teacher);
-                $flow['arrayteacher'][$i]=array("id_teacher"=>$id_teacher,"surname"=>$buf[0]->surname, "name"=>$buf[0]->name,
+                $flow['arrayteacher'][$i]=array("id_teacher"=>$id_teacher,"role"=>5,"surname"=>$buf[0]->surname, "name"=>$buf[0]->name,
                 "patronymic"=>$buf[0]->patronymic,"email"=>$buf[0]->email,"phone"=>$buf[0]->phone,"creator"=>$creator);
             }
             return response()->json($flow);
@@ -272,8 +268,10 @@ class DisciplineController extends Controller
         if (count($groups_flow)>0) DisciplineController::addinLog_group($groups_flow, $id_type_log, $id_log);
     }
 
-    public static function addinLog_group($groups_flow, $id_type_log, $id_log)
+    public static function addinLog_group($groups_flow, $id_type_log, $id_log, $id_disc_flow=null)
     {
+        $type_execution = User::SearchRecordbyId("type_execution", ['name'], 'id', 1)->name;
+        // цикл по группам
         for ($i=0; $i<count($groups_flow); $i++)
         {
             $name_group = User::SearchRecordbyId("group", 'name', "id", $groups_flow[$i]->id_group);
@@ -287,7 +285,35 @@ class DisciplineController extends Controller
             {
                 $array_students_types_control=$listStudents->map(function ($object) { return clone $object; }); 
                 $array_students_intersessional_control=$listStudents->map(function ($object) { return clone $object; }); 
-                 $array_students_passes=$listStudents->map(function ($object) { return clone $object; }); 
+                $array_students_passes=$listStudents->map(function ($object) { return clone $object; }); 
+
+                $tasks=[];
+                if ($id_disc_flow!=null)
+                {
+                    // найти задания по данной disc_flow
+                    $listtasks = User::SeachRecordsbyWhere("education_material", "id_disc_flow=? and id_type_material=1", [$id_disc_flow]);
+                    if (count( $listtasks)>0)
+                    {
+                        // цикл по заданиям группы
+                        for ($ii=0;$ii<count($listtasks);$ii++)
+                        {
+                            $tasks[$ii]['id_educat_material']=$listtasks[$ii]->id;
+                            $tasks[$ii]['topic_material']=$listtasks[$ii]->topic_material;
+                            $tasks[$ii]['array_students']=$listStudents->map(function ($object) { return clone $object; }); 
+                            for ($j=0;$j<count($listStudents);$j++)
+                            {
+                                $tasks[$ii]['array_students'][$j]->id_type_execution=1;
+                                $tasks[$ii]['array_students'][$j]->type_execution=$type_execution;
+                                $tasks[$ii]['array_students'][$j]->score=null; 
+                                $tasks[$ii]['array_students'][$j]->date=null;
+                                $tasks[$ii]['array_students'][$j]->id_teacher=null; 
+                                // создать папки
+                                $tasks[$ii]['array_students'][$j]->folder=dirname($listtasks[$ii]->folder,1)."/id".$listStudents[$j]->id_student."".File::translit($listStudents[$j]->surname);; 
+                                Storage::disk('mypublicdisk')->makeDirectory($tasks[$ii]['array_students'][$j]->folder);
+                            }
+                        }
+                    }
+                }
                 for ($j=0; $j<count($listStudents); $j++) 
                 {
                     $array_students_types_control[$j]->score=null; // оценка
@@ -305,7 +331,7 @@ class DisciplineController extends Controller
                 $array_students_offset = $array_students_types_control->map(function ($object) { return clone $object; }); 
                 $array_students_exam   = $array_students_types_control->map(function ($object) { return clone $object; }); 
 
-                $file_log_group_json=File::create_file_gradebook($name_group->name,$array_students_types_control, $array_students_intersessional_control, 
+                $file_log_group_json=File::create_file_gradebook($name_group->name,$tasks,$array_students_types_control, $array_students_intersessional_control, 
                 $array_students_passes,$array_students_offset,$array_students_exam);
             }
             User::InsertRecord(array("id_log"=>$id_log, "id_group" => $groups_flow[$i]->id_group, "log_group_json"=>$file_log_group_json), "log_group");

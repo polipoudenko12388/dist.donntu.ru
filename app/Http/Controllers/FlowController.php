@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\Flow;
 use App\Models\User;
 use App\Models\Log;
+use Facade\FlareClient\Solutions\ReportSolution;
+use Illuminate\Support\Facades\Storage;
 
 class FlowController extends Controller
 {
@@ -106,9 +108,21 @@ class FlowController extends Controller
                 User::DeleteRecord("flow_group","id_flow=?",[$request->input('id_flow')], 'id_group', $request->input('groups'));
 
                 // добавлен ли этот поток в дисциплину 
-                $buf = Log::SearchGroupsFlowinLog(['log_group.id as id_log_group'],$request->input('id_flow'), $request->input('groups'));
+                $buf = Log::SearchGroupsFlowinLog(['log_group.id as id_log_group', 'log_group.log_group_json','log_disc_flow.id_type_log'],$request->input('id_flow'), $request->input('groups'));
                 if (count($buf)>0)
                 {
+                    // удаление папки группы конкретного задания
+                    for ($i=0; $i<count($buf); $i++) // цикл по журналам
+                    {
+                        if ($buf[$i]->id_type_log==2)
+                        {
+                            $log = json_decode($buf[$i]->log_group_json);
+                            for ($j=0; $j<count($log->tasks);$j++) // цикл по заданиям в журнале 
+                            {
+                                Storage::disk('mypublicdisk')->deleteDirectory($log->tasks[$j]->folder);
+                            }
+                        }
+                    }
                     // удаление журнала групп данного потока дисциплины
                     User::DeleteRecord("log_group",null,null, 'id', array_map(function ($object){return $object->id_log_group;},$buf->toArray()));
                 }
@@ -147,7 +161,7 @@ class FlowController extends Controller
                 $this->InsertRecordFlowGroup($request->input('id_flow'),$request->input('groups'));
                 
                 // добавлен ли этот поток в дисциплину 
-                $buf = Log::SearchGroupsFlowinLog(['log_disc_flow.id as id_log','log_disc_flow.id_type_log'],$request->input('id_flow'),null,true);
+                $buf = Log::SearchGroupsFlowinLog(['log_disc_flow.id as id_log','log_disc_flow.id_disc_flow','log_disc_flow.id_type_log'],$request->input('id_flow'),null,true);
                 if (count($buf)>0)
                 {
                     // создание журнала посещаемости в log_group для новых групп данного потока дисциплины
@@ -161,7 +175,7 @@ class FlowController extends Controller
                         else
                         {
                             DisciplineController::addinLog_group(collect(array_map(function ($object) { return (object)["id_group"=>$object]; },
-                            $request->input('groups'))), 2, $buf[$i]->id_log);
+                            $request->input('groups'))), 2, $buf[$i]->id_log, $buf[$i]->id_disc_flow);
                         }
                     }
                 }

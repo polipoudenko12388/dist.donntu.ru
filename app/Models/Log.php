@@ -13,7 +13,6 @@ class Log extends Model
     public static function SearchGroupsFlowinLog($arraynamecolumnprint,$id_flow, $groups=null, $distinctraw=null)
     {
         $result = DB::connection(Discipline::$ConnectDBWebsite)->table('discipline_flow')
-        // ->select('log_disc_flow.id as id_log','log_group.id as id_log_group', 'log_group.id_group')
         ->when($distinctraw, function ($query) { $query->distinct();})
         ->select($arraynamecolumnprint)
         ->join('log_disc_flow', 'discipline_flow.id','=','log_disc_flow.id_disc_flow')

@@ -3,57 +3,11 @@
 namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Group;
-use App\Models\HumanWorkes;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 
 class GeneralTeacherController extends Controller
 {
-    // данные о преподавателе - профиль
-    public function DataProfile(Request $request)
-    {
-        $HumanWorkes = new HumanWorkes();
-
-        // проверка токена
-        $token_verification = GeneralUserController::VerifactionToken($request->input('id_user_reg'),$request->input('token'));
-        if (count($token_verification)==0) return response()->json(["error" => "Вы не авторизованы. Войдите в систему."]);
-        else
-        {
-            $arrayinfotoken=AuthorizationController::decodeToken($request->input('token'));
-
-            $id_human=User::SearchRecordbyId("user","id_human_db_univ", "id", $arrayinfotoken->id_user);
-            $id_role_workes=User::SearchRecordbyId("role_user","id_role_db_univ", "id", $arrayinfotoken->id_role_user);
-            $date_registration = User::SearchRecordbyId("registration","date_registration", "id", $request->input('id_user_reg'));
-            $dataWorkes = array_merge((array)$HumanWorkes->getDataWorkes($id_human->id_human_db_univ, $id_role_workes->id_role_db_univ),(array)$date_registration);
-            if ($dataWorkes['photo']!=null) $dataWorkes['photo']=Storage::disk('mypublicdisk')->url($dataWorkes['photo']);
-            else $dataWorkes['photo']=Storage::disk('mypublicdisk')->url('defaultimage/user_photo.svg');
-            return response()->json($dataWorkes);
-        }
-    }
-
-    // -------------------------------------------------
-    // ЧЕРНОВИК ЧЕРНОВИК ЧЕРНОВИК ЧЕРНОВИК ЧЕРНОВИК
-    public function getfile(Request $request)
-    {
-        // $file_path = public_path('storage/fileserver/photouser/0563d680-c690-4fd5-a222-eb31bd51554c.jpg');
-
-        $file_path = public_path('storage/fileserver/photouser/default_fon_discipline.png');
-
-        // return response()->download($file_path);
-        
-        // $disk = Storage::disk('mypublicdisk');
-        // $file= $disk->url('/photouser/0563d680-c690-4fd5-a222-eb31bd51554c.jpg');
-        
-        // $file= $disk->path('photouser/default_fon_discipline.png');
-        
-        // $disk = Storage::disk('public');
-        // $file= $disk->put('fileserver/photouser/pfoto1.jpg', 'j');
-        // return response()->json($file);
-        // return response()->download( $file);
-    }
-    //--------------------------------------------------
-
-
     // ОБЩИЕ
     
     //список институтов

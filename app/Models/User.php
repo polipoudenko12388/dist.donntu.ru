@@ -61,6 +61,10 @@ class User extends Model
         })->get();
       }
 
+    public static function sqlraw($nametable, $arraysql)
+    {
+        return DB::table($nametable)->select(DB::raw($arraysql))->get();
+    }
     // добавление записи в таблицу с получением его id
     public static function getIdInsertRecord($array_insert_value, $nametable)
     {
@@ -80,9 +84,9 @@ class User extends Model
     }
 
       // обновление записей
-      public static function UpdateColumnJson($nametable, $namecolumnsql, $value_sql, $name_update_column, $str_update_value)
+      public static function UpdateColumnJson($nametable, $strwhereRaw, $array_value_sql_raw, $name_update_column, $str_update_value)
       {
-        DB::connection(User::$ConnectDBWebsite)->table($nametable)->where($namecolumnsql, $value_sql)->update([$name_update_column => DB::raw($str_update_value)]);
+        DB::connection(User::$ConnectDBWebsite)->table($nametable)->whereRaw($strwhereRaw, $array_value_sql_raw)->update([$name_update_column => DB::raw($str_update_value)]);
       }
 
     public static function DeleteRecord($nametable,$strwhereRaw, $array_value_sql_raw,$namecolumnsql=null, $array_delete_id_value=null)

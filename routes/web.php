@@ -84,6 +84,7 @@ Route::prefix('/teacher')->group(function ()
         //     "arrayteacher": [
         //       {
         //         "id_teacher": 10,
+        //         "role": 5,
         //         "surname": "Матях",
         //         "name": "Ирина",
         //         "patronymic": "Владимировна",
@@ -96,7 +97,6 @@ Route::prefix('/teacher')->group(function ()
         // отправка на сервер: {"id_user_reg":"39","token":"", "number_hours_reading":null, "id_disc_flow":null, "add_teachers":null, "delete_teachers":[1,2] }
         // отправка на клиент: "error" or "info"
         Route::post('/editflowindisc', 'DisciplineController@ResultEditFlowinDisc'); // +++
-
 
        
         Route::prefix('/posts')->group(function ()
@@ -145,7 +145,7 @@ Route::prefix('/teacher')->group(function ()
             // отправка на сервер: {"id_user_reg":39, "token":"", "id_disc_flow":22, 
             // "topic_material":"Тема материала", "id_type_material":"1", "id_type_assessment":1, 
             // "date_assignment":"2023-05-25", "max_score":5,"min_score":1, "files":[] }
-            // отправка на клиент: "error" or "info"
+            // отправка на клиент: "error" or "info" (название темы можно не писать, если добавляется лекция)
             Route::post('/addmaterial', 'EducatationMaterialController@ResultAddMaterial');
 
 
@@ -159,14 +159,20 @@ Route::prefix('/teacher')->group(function ()
             // "date_assignment":"2023-05-25", "max_score":5,"min_score":1, "files":[]}
             // отправка на клиент: "error" or "info"
             Route::post('/edittask', 'EducatationMaterialController@ResultEditMaterialTasks');
+
+            // отправка на сервер: {"id_user_reg":39, "token":"","id_disc_flow":22, "id_educat_material":null}
+            Route::post('/', 'EducatationMaterialController@ListMaterialTasks');
         });
         
+        // отправка на сервер: {"id_user_reg":"39","token":"", "id_educat_material":null, "id_disc_flow":22, "name_file":null}
+        Route::post('/deletefilesdiscipline','EducatationMaterialController@DeleteFileLecture');
+
         // для полины 
         Route::post('/createlog', 'DisciplineController@createlogbuf'); // +++
         
     });
    
-    // отправка на сервер: {"id_user_reg":"39","token":""}
+    // отправка на сервер: {"id_user_reg":"39","token":"", "id_student_teacher":null, "role":null}
     // отправка на клиент: "error" or
     // {
     //     "id": 43,
@@ -195,7 +201,7 @@ Route::prefix('/teacher')->group(function ()
     //     ],
     //     "date_registration": "2023-05-02"
     //   }
-    Route::post('/profile', 'GeneralTeacherController@DataProfile'); // +++
+    Route::post('/profile', 'GeneralUserController@DataProfile'); // +++
     // отправка на сервер: {"id_user_reg":"39","token":"","id_institute":1}
     // отправка на клиент: "error" or [ { "id_institute": 1, "name_institute": "Горного дела и геологии"}, {} ] - весь список или по фильтрации
     Route::post('/institutions', 'GeneralTeacherController@ListInstitutions'); // +++
@@ -339,10 +345,10 @@ Route::prefix('/teacher')->group(function ()
         // отправка на клиент: error or 
         Route::post('/updatelog',  'LogController@ResultUpdateLog'); 
 
+        // запрос на разрешение изменения журнала
         // отправка на сервер: {"id_user_reg":"39","token":"", "id_log_group": 132}
         // отправка на клиент: error or 
         Route::post('/permitedit',  'LogController@ResultPermitEditLog'); 
-
     });
 
      // отправка на сервер: {"id_user_reg":"39","token":""}
@@ -400,3 +406,55 @@ Route::prefix('/teacher')->group(function ()
 // отправка на сервер: {"id_user_reg":"39","token":""}
 // отправка на клиент: "info" or "error"
 Route::post('/exit','GeneralUserController@exit'); 
+
+// отправка на сервер: {"id_user_reg":"39","token":"", "id_disc_flow":null, "id_type_material":null}
+// отправка на клиент: "error" or 
+// [
+//     {
+//       "id_educ_material": 11,
+//       "name_file": "Lekciya_1.doc",
+//       "file": "http://dist.donntu.ru:3030/storage/fileserver/disciplines/id23Disciplina1_20230517_160849/id22Potok1_20230517_162857/lectures/Lekciya_1.doc"
+//     }, {} 
+// ]
+Route::post('/filesdiscipline','EducatationMaterialController@FilesEducatMaterial'); 
+
+// отправка на сервер: {"id_user_reg":"39","token":"", "id_disc_flow":null}
+// отправка на клиент: error or 
+// {
+//     "name_flow": "Поток3",
+//     "groups": [
+//       {
+//         "namegroup": "ИСТ-19а",
+//         "count_students": 12,
+//         "students": [
+//           {
+//             "id_student": 19,
+//             "role": 1, 
+//             "surname": "Белая",
+//             "name": "Алина",
+//             "patronymic": "Юрьевна"
+//             "photo": "http://dist.donntu.ru:3030/storage/fileserver/defaultimage/user_photo.svg"
+//           },{},
+//         ]
+//       },
+//       {
+//         "namegroup": "ИСТ-19б",
+//         "count_students": 8,
+//         "students": [
+//           { },{}
+//         ]
+//       },
+//       {
+//         "namegroup": "БИ-19",
+//         "count_students": 1,
+//         "students": [ { } ]
+//       },
+//       {
+//         "namegroup": "КМД-19",
+//         "count_students": 0,
+//         "students": null
+//       }
+//     ]
+//   }
+Route::post('/studentsdiscipline','GeneralUserController@ListStudentsDiscipline'); 
+
