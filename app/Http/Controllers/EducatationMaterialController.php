@@ -11,6 +11,14 @@ use Illuminate\Support\Facades\Storage;
 class EducatationMaterialController extends Controller
 {
     
+    public function addrecordinpost($arrayinfotoken,$request,$oldtopicalmaterial,$pathtext)
+    {
+        $datateacher=User::SearchRecordbyId("user", ['surname','name','patronymic'], 'id', $arrayinfotoken->id_user);
+        $text="Пользователь ".$datateacher->surname." ".$datateacher->name." ".$datateacher->patronymic." ".$pathtext."\"".$oldtopicalmaterial."\" ";
+        // добавление в т. posts инфы о том, что было удалено/отредактировано задание/лекция
+        User::InsertRecord(["id_disc_flow"=>$request->input('id_disc_flow'),"id_teacher_creator"=>$arrayinfotoken->id_teacher_student,
+        "date_create_post"=>date('Y-m-d H:i:s'),"id_type_post"=>2,"text"=>$text, "attendance_button"=>(int)false], "posts");
+    }
     public function ResultAddMaterial(Request $request)
     {
          // проверка токена
@@ -22,17 +30,18 @@ class EducatationMaterialController extends Controller
             // проверка темы уже на сущ. (не может быть пустая, если доб. ЛБ)
             $Seachtopicalmaterial =  User::SeachRecordsbyWhere("education_material", "topic_material=? and id_disc_flow=? and id_type_material=1", [$request->input('topic_material'),
             $request->input('id_disc_flow')]);
-            if(count($Seachtopicalmaterial)>0)  return response()->json(["error"=>"Учебный материал с данной темой уже существует."]);
+            if($request->input('id_type_material')==1 && count($Seachtopicalmaterial)>0)  return response()->json(["error"=>"Учебный материал с данной темой уже существует."]);
             else if ((trim($request->input('topic_material'))==null) && $request->input('id_type_material')==1) return response()->json(["error"=>"Выполните ввод темы добавляемого материала."]);
             else
             {
                 // проверка что min_score < max_score
-                if ((int)$request->input('min_score')>=(int)$request->input('max_score')) return response()->json(["error"=>"Не правильный ввод отметок."]);
+                if ((int)$request->input('min_score')>=(int)$request->input('max_score') && $request->input('id_type_material')==1) return response()->json(["error"=>"Не правильный ввод отметок."]);
                 else
                 {
                     $folder = User::SearchRecordbyId("discipline_flow",['folder'], 'id',$request->input('id_disc_flow'));
                     $datateacher = User::SearchRecordbyId("user", ['surname','name','patronymic'], 'id', $arrayinfotoken->id_user);
-                    $date = date("Y-m-d", strtotime($request->input('date_assignment')));
+                    if ($request->input('date_assignment'!=null)) $date = date("Y-m-d", strtotime($request->input('date_assignment')));
+                    else $date=null;
                     $text = "Пользователь ".$datateacher->surname." ".$datateacher->name." ".$datateacher->patronymic." добавил(-а)";
                     
                     if ($request->input('id_type_material')==2) // Лекция
@@ -121,6 +130,9 @@ class EducatationMaterialController extends Controller
         if (count($token_verification)==0) return response()->json(["error" => "Вы не авторизованы. Войдите в систему."]);
         else  
         { 
+            $arrayinfotoken=AuthorizationController::decodeToken($request->input('token'));
+            $oldtopicalmaterial = User::SearchRecordbyId("education_material", ['topic_material'], 'id', $request->input('id_educat_material'))->topic_material;
+
             // удаление папки
             $education_material = User::SearchRecordbyId("education_material",['folder','id_type_material'], 'id',$request->input('id_educat_material'));
             if ($education_material->id_type_material==1) Storage::disk('mypublicdisk')->deleteDirectory(dirname($education_material->folder,1));
@@ -128,9 +140,7 @@ class EducatationMaterialController extends Controller
         
             // удаление задания
             User::DeleteRecord("education_material","id=?",[$request->input('id_educat_material')]);
-            return response()->json(["info"=>"Удаление задания прошло успешно."]); 
-
-
+            
             // удаление задания из журналов групп потока
             $list_log_groups_flow = User::getListData(User::$ConnectDBWebsite, "log_disc_flow", ['log_disc_flow.id_type_log','log_group.id as id_log_group'], 'id_disc_flow', 
             $request->input('id_disc_flow'), "log_group", "log_disc_flow.id","log_group.id_log");
@@ -149,6 +159,8 @@ class EducatationMaterialController extends Controller
                 }
             }
 
+            $this->addrecordinpost($arrayinfotoken,$request,$oldtopicalmaterial,"удалил(-а) задание по теме ");
+
             return response()->json(["info"=>"Удаление задания прошло успешно."]); 
                     
         }
@@ -161,6 +173,8 @@ class EducatationMaterialController extends Controller
         if (count($token_verification)==0) return response()->json(["error" => "Вы не авторизованы. Войдите в систему."]);
         else  
         { 
+            $arrayinfotoken=AuthorizationController::decodeToken($request->input('token'));
+            $oldtopicalmaterial = User::SearchRecordbyId("education_material", ['topic_material'], 'id', $request->input('id_educat_material'))->topic_material;
            // проверка темы уже на сущ. (не может быть пустая)
            $Seachtopicalmaterial =  User::SeachRecordsbyWhere("education_material", "topic_material=? and id_disc_flow=?", [$request->input('topic_material'),
            $request->input('id_disc_flow')]);
@@ -207,6 +221,8 @@ class EducatationMaterialController extends Controller
                         }
                     }
 
+                    $this->addrecordinpost($arrayinfotoken,$request,$oldtopicalmaterial," отредактировал(-а) задание по теме ");
+                    
                    return response()->json(["info"=>"Редактирование задания прошло успешно."]); 
                }
             }
@@ -265,7 +281,7 @@ class EducatationMaterialController extends Controller
         else  { return response()->json(User::getListData(User::$ConnectDBWebsite, "type_assessment", ['id as id_type','name as name_type'])); }   
     }
 
-    // тип результатов оценивания (назначено, сдано, с оценкой, доработать)
+    // тип результатов оценивания (назначено, сдано, с оценкой, доработатьб сдано с опозданием)
     public function ListTypeExecution(Request $request)
     {
         // проверка токена
@@ -307,9 +323,166 @@ class EducatationMaterialController extends Controller
         if (count($token_verification)==0) return response()->json(["error" => "Вы не авторизованы. Войдите в систему."]);
         else  
         {
-            $lecture = User::SearchRecordbyId("education_material", ["folder"], 'id', $request->input('id_educ_material'));
+            $arrayinfotoken=AuthorizationController::decodeToken($request->input('token'));
+
+            $lecture = User::SearchRecordbyId("education_material", ["folder"], 'id', $request->input('id_educat_material'));
             Storage::disk('mypublicdisk')->delete($lecture->folder."/".$request->input('name_file'));
+
+            $this->addrecordinpost($arrayinfotoken,$request,$request->input('name_file'),"удалил(-а) лекционный материал ");
             return response()->json(["info"=>"Удаление лекционного материала прошло успешно."]);
         }
     }
+
+    // получение окна конкретного задания потока дисциплины
+    public function ResultGetTaskDiscipline(Request $request)
+    { 
+        // проверка токена
+        $token_verification = GeneralUserController::VerifactionToken($request->input('id_user_reg'),$request->input('token'));
+        if (count($token_verification)==0) return response()->json(["error" => "Вы не авторизованы. Войдите в систему."]);
+        else  
+        {
+            // по id_disc_flow получить журналы групп данного потока дисциплины
+            $list_log_groups_flow = User::getListData(User::$ConnectDBWebsite, "log_disc_flow", ['log_disc_flow.id_type_log','log_group.id as id_log_group','log_group.log_group_json'], 
+            'id_disc_flow', $request->input('id_disc_flow'), "log_group", "log_disc_flow.id","log_group.id_log");
+            
+            $count=0; 
+            for ($i=0;$i<count($list_log_groups_flow);$i++)
+            {
+                $count_type_naznacheno=0; $count_type_sdano=0; $count_in_score=0;$count_type_dorabotat=0; $count_type_sdano_opozd=0;
+                if ($list_log_groups_flow[$i]->id_type_log==2) // журнал успеваемости
+                {
+                    $log = json_decode($list_log_groups_flow[$i]->log_group_json);
+                    $ListGroups[$count]['group']["name_group"]=$log->name_group;
+                    for ($j=0;$j<count($log->tasks);$j++) // цикл по заданиям текущего журнала
+                    {  
+                        if ($log->tasks[$j]->id_educat_material==$request->input('id_educat_material')) // необх. данные по нужному. заданию
+                        {
+                            $ListGroups[$count]['group']["count_students"]=count($log->tasks[$j]->array_students);
+                            $ListGroups[$count]['group']["id_log_group"] = $list_log_groups_flow[$i]->id_log_group;
+                            $ListGroups[$count]['group']['array_students']=[];
+                            for ($k=0;$k<count($log->tasks[$j]->array_students);$k++)
+                            {
+                                if ($log->tasks[$j]->array_students[$k]->score==null) $score="неизвестно";
+                                else $score=$log->tasks[$j]->array_students[$k]->score;
+
+                                if ($log->tasks[$j]->array_students[$k]->id_type_execution==1) $count_type_naznacheno++;
+                                else if ($log->tasks[$j]->array_students[$k]->id_type_execution==2) $count_type_sdano++;
+                                else if ($log->tasks[$j]->array_students[$k]->id_type_execution==3) $count_in_score++;
+                                else if ($log->tasks[$j]->array_students[$k]->id_type_execution==4) $count_type_dorabotat++;
+                                else $count_type_sdano_opozd++;
+
+                                $ListGroups[$count]['group']['array_students'][$k] = array("id_student"=>$log->tasks[$j]->array_students[$k]->id_student,
+                                "surname"=>$log->tasks[$j]->array_students[$k]->surname,
+                                "name"=>$log->tasks[$j]->array_students[$k]->name,"patronymic"=>$log->tasks[$j]->array_students[$k]->patronymic,
+                                "type_execution"=>$log->tasks[$j]->array_students[$k]->type_execution,"score"=>$score);
+                            }
+                        }
+                        else break;
+                    }  
+                    $ListGroups[$count]['countrecord']=array("count_type_naznacheno"=>$count_type_naznacheno,"count_type_sdano"=>$count_type_sdano,
+                    "count_in_score"=>$count_in_score,"count_type_dorabotat"=>$count_type_dorabotat,"count_type_sdano_opozd"=>$count_type_sdano_opozd);
+                    $count++;
+                }
+            }
+
+            return response()->json($ListGroups);
+        }
+    }
+
+    // получение окна задания конкретного студента потока дисциплины
+    public function ResultGetTaskStudentDiscipline(Request $request)
+    {
+        // проверка токена
+        $token_verification = GeneralUserController::VerifactionToken($request->input('id_user_reg'),$request->input('token'));
+        if (count($token_verification)==0) return response()->json(["error" => "Вы не авторизованы. Войдите в систему."]);
+        else  
+        {
+            $log = json_decode(User::SearchRecordbyId('log_group', ['log_group_json'], 'id', $request->input('id_log_group'))->log_group_json);
+            $taskstudent=[];
+            for ($i=0; $i<count($log->tasks);$i++)
+            {
+                if ($log->tasks[$i]->id_educat_material==$request->input('id_educat_material'))
+                {
+                    for ($j=0; $j<count($log->tasks[$i]->array_students); $j++)
+                    {
+                        if ($log->tasks[$i]->array_students[$j]->id_student==$request->input('id_student'))
+                        {
+                            $bufstudent=$log->tasks[$i]->array_students[$j];
+
+                            if ($bufstudent->score==null) $score="неизвестно";
+                            else $score=$bufstudent->score;
+
+                            if ($bufstudent->date==null) $date="отсутствует";
+                            else $date=$bufstudent->date;
+
+                            $taskstudent=array("group"=>$log->name_group,"surname"=>$bufstudent->surname, "name"=>$bufstudent->name, "patronymic"=>$bufstudent->patronymic,
+                            "id_type_execution"=>$bufstudent->id_type_execution, "type_execution"=>$bufstudent->type_execution, "date"=>$date, "score"=>$score);
+
+                            $files=Storage::disk('mypublicdisk')->files($bufstudent->folder);
+                            $taskstudent['files']=[];
+                            for ($k=0;$k<count($files);$k++)
+                            {
+                                $taskstudent['files'][$k]=Storage::disk('mypublicdisk')->url($files[$k]);
+                            }
+                        break;
+                        }
+                    }
+                    break;
+                }
+            }
+            return response()->json($taskstudent);
+        }
+
+    }
+
+    // сохранение в журнал результата проверки задания студента
+    public function ResultSaveCheckTaskStudentDiscipline(Request $request)
+    {
+        // проверка токена
+        $token_verification = GeneralUserController::VerifactionToken($request->input('id_user_reg'),$request->input('token'));
+        if (count($token_verification)==0) return response()->json(["error" => "Вы не авторизованы. Войдите в систему."]);
+        else  
+        {
+            $arrayinfotoken=AuthorizationController::decodeToken($request->input('token'));
+            $log = json_decode(User::SearchRecordbyId('log_group', ['log_group_json'], 'id', $request->input('id_log_group'))->log_group_json);
+            for ($i=0; $i<count($log->tasks);$i++)
+            {
+                if ($log->tasks[$i]->id_educat_material==$request->input('id_educat_material'))
+                {
+                    for ($j=0; $j<count($log->tasks[$i]->array_students); $j++)
+                    {
+                        if ($log->tasks[$i]->array_students[$j]->id_student==$request->input('id_student'))
+                        {
+                            $log->tasks[$i]->array_students[$j]->score=$request->input('score');
+                            $log->tasks[$i]->array_students[$j]->id_type_execution=$request->input('id_type_execution');
+                            $log->tasks[$i]->array_students[$j]->type_execution=$request->input('type_execution');
+                            $log->tasks[$i]->array_students[$j]->id_teacher=$arrayinfotoken->id_teacher_student;
+                            break;
+                        }   
+                    }
+                break;
+                }
+            }
+        User::UpdateColumn("log_group",['id','=',$request->input('id_log_group')], ["log_group_json"=> json_encode($log)]); 
+        return response()->json(["info"=>"Сохранение данных в журнал прошло успешно."]);
+        }
+    }
+
+    // редактирование пояснения к заданию
+    public function ResultEditExplanationTask(Request $request)
+    {
+        // проверка токена
+        $token_verification = GeneralUserController::VerifactionToken($request->input('id_user_reg'),$request->input('token'));
+        if (count($token_verification)==0) return response()->json(["error" => "Вы не авторизованы. Войдите в систему."]);
+        else  
+        {
+            if (trim($request->input('explanation_task'))!=null)
+            {
+                User::UpdateColumn("education_material",['id','=',$request->input('id_educat_material')], ["explanation_task"=> trim($request->input('explanation_task'))]); 
+                return response()->json(["info" => "Пояснение к заданию успешно отредактировано."]);
+            }
+            else return response()->json(["error" => "Выполните ввод пояснения к заданию."]);
+        }
+    }
 }
+

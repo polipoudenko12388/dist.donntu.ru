@@ -26,22 +26,23 @@ class GeneralUserController extends Controller
         {
             $arrayinfotoken=AuthorizationController::decodeToken($request->input('token'));
 
-            if ($request->input('id_student_teacher')!=null && $request->input('role')!=null)
+            if ($request->input('id_student_teacher')!=null && $request->input('id_role')!=null)
             {
-                $id_student_teacher=$request->input('id_student_teacher'); $role=$request->input('role');
+                $id_student_teacher=$request->input('id_student_teacher'); $role=$request->input('id_role');
                 if ($role==1) $id_user = User::SearchRecordbyId("student", ["id_user"], "id", $id_student_teacher)->id_user;
                 else if ($role==5) $id_user = User::SearchRecordbyId("teacher",["id_user"], "id", $id_student_teacher)->id_user;
             } 
             else { $id_user=$arrayinfotoken->id_user; $role=$arrayinfotoken->id_role_user; }
             
             $id_human=User::SearchRecordbyId("user","id_human_db_univ", "id", $id_user);
-            $date_registration = User::SearchRecordbyId("registration","date_registration", "id", $id_user);
+            $date_registration = User::SearchRecordbyId("registration","date_registration", "id_user", $id_user);
+
+            $role_user=User::SearchRecordbyId("role_user",["id_role_db_univ",'name'], "id", $role);
 
             if ($role==5) // преподаватель
             {
                 $HumanWorkes = new HumanWorkes();
-                $id_role_workes=User::SearchRecordbyId("role_user","id_role_db_univ", "id", $role);
-                $dataWorkes = array_merge((array)$HumanWorkes->getDataWorkes($id_human->id_human_db_univ, $id_role_workes->id_role_db_univ),(array)$date_registration);
+                $dataWorkes = array_merge((array)$HumanWorkes->getDataWorkes($id_human->id_human_db_univ, $role_user->id_role_db_univ),(array)$date_registration);
                 if ($dataWorkes['photo']!=null) $dataWorkes['photo']=Storage::disk('mypublicdisk')->url($dataWorkes['photo']);
                 else $dataWorkes['photo']=Storage::disk('mypublicdisk')->url('defaultimage/user_photo.svg');
                 return response()->json($dataWorkes);
@@ -49,7 +50,7 @@ class GeneralUserController extends Controller
             else if ($role==1) // студент
             {
                 $HumanStudent = new HumanStudent();
-                $dataStudent = array_merge((array)$HumanStudent->getDataStudents($id_human->id_human_db_univ),(array)$date_registration);
+                $dataStudent = array_merge((array)$HumanStudent->getDataStudents($id_human->id_human_db_univ),["date_registration"=>$date_registration->date_registration,"role"=>$role_user->name]);
                 if ($dataStudent['photo']!=null) $dataStudent['photo']=Storage::disk('mypublicdisk')->url($dataStudent['photo']);
                 else $dataStudent['photo']=Storage::disk('mypublicdisk')->url('defaultimage/user_photo.svg');
                 return response()->json($dataStudent);

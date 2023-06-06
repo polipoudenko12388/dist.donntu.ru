@@ -110,7 +110,7 @@ class RegistrationController extends Controller
                         {
                             foreach ($buf_flow as $item)  { foreach ($item as $item2) {$array_flow_group_student[] = $item2; } }
                             // проверяю какие потоки добавлены в дисциплины 
-                            $array_id_log_group=null;
+                            $array_id_log_group=[];
                             foreach ($array_flow_group_student as $item)
                             { 
                                 foreach (Log::SearchGroupsFlowinLog(['log_group.id as id_log_group','log_disc_flow.id_type_log','log_group.log_group_json'],$item->id_flow,[$item->id_group],null) as $item2)

@@ -67,7 +67,7 @@ Route::prefix('/teacher')->group(function ()
         // отправка на клиент: "error" or "info"
         Route::post('/editdisc', 'DisciplineController@ResultEditDisc'); // +++
 
-        // отправка на сервер: {"id_user_reg":"39","token":"", "id_disc":null, "id_flow":null, "name_flow":null, "number_hours_reading":null, "teachers":[1,2] - array }
+        // отправка на сервер: {"id_user_reg":"39","token":"", "id_disc":null, "id_flow":null,  "number_hours_reading":null, "teachers":[1,2] - array }
         // отправка на клиент: "error" or "info"
         Route::post('/addflowindisc', 'DisciplineController@ResultAddFlowinDisc'); // +++
 
@@ -148,9 +148,8 @@ Route::prefix('/teacher')->group(function ()
             // отправка на клиент: "error" or "info" (название темы можно не писать, если добавляется лекция)
             Route::post('/addmaterial', 'EducatationMaterialController@ResultAddMaterial');
 
-
             // удаление самого задания 
-            // отправка на сервер: {"id_user_reg":39, "token":"","id_educat_material":null }
+            // отправка на сервер: {"id_user_reg":39, "token":"","id_educat_material":null ,"id_disc_flow":null}
             // отправка на клиент: "error" or "info"
             Route::post('/deletetask', 'EducatationMaterialController@ResultDeleteMaterialTasks');
         
@@ -161,7 +160,87 @@ Route::prefix('/teacher')->group(function ()
             Route::post('/edittask', 'EducatationMaterialController@ResultEditMaterialTasks');
 
             // отправка на сервер: {"id_user_reg":39, "token":"","id_disc_flow":22, "id_educat_material":null}
+            // отправка на клиент: "error" or
+            // [
+            //     {
+            //       "id_educat_material": 53,
+            //       "id_disc_flow": 22,
+            //       "topic_material": "задание3",
+            //       "id_type_assessment": 1,
+            //       "type_assessment": "оценка",
+            //       "id_teacher_added": 9,
+            //       "surname": "Теплова",
+            //       "name": "Ольга",
+            //       "patronymic": "Валентиновна",
+            //       "date_added": "2023-05-31",
+            //       "date_assignment": "2023-05-28",
+            //       "explanation_task": null,
+            //       "max_score": 5,
+            //       "min_score": 3,
+            //       "files": [
+            //         "http://dist.donntu.ru:3030/storage/fileserver/disciplines/id23Disciplina1_20230517_160849/id22Potok1_20230517_162857/tasks/id53task/filesteacher/поворот.JPG"
+            //       ]
+            //     }
+            //   ]
             Route::post('/', 'EducatationMaterialController@ListMaterialTasks');
+
+            // окно конретного задания
+            // отправка на сервер: {"id_user_reg":39, "token":"","id_disc_flow":22, "id_educat_material":null}
+            // отправка на клиент: "error" or
+            // [
+            //     {
+            //       "group": {
+            //         "name_group": "ИСТ-19а",
+            //         "count_students": 12,
+            //         "id_log_group": 266,
+            //         "array_students": [
+            //           {
+            //             "id_student": 19,
+            //             "surname": "Белая",
+            //             "name": "Алина",
+            //             "patronymic": "Юрьевна",
+            //             "type_execution": "назначено",
+            //             "score": "неизвестно"
+            //           }
+            //         ]
+            //       },
+            //       "countrecord": {
+            //         "count_type_naznacheno": 12,
+            //         "count_type_sdano": 0,
+            //         "count_in_score": 0,
+            //         "count_type_dorabotat": 0,
+            //         "count_type_sdano_opozd": 0
+            //       }
+            //     }
+            // ]
+            Route::post('/task', 'EducatationMaterialController@ResultGetTaskDiscipline');
+
+            // окно конретного задания студента
+            // отправка на сервер: {"id_user_reg":39, "token":"", "id_educat_material":null,"id_log_group":null, "id_student":null }
+            // отправка на клиент:
+            // {
+            //     "group": "ИСТ-19а",
+            //     "surname": "Пойденко",
+            //     "name": "Полина",
+            //     "patronymic": "Александровна",
+            //     "id_type_execution": 2,
+            //     "type_execution": "сдано",
+            //     "date": "2023-05-05",
+            //     "score": "неизвестно",
+            //     "files": [
+            //       "http://dist.donntu.ru:3030/storage/fileserver/disciplines/id23Disciplina1_20230517_160849/id22Potok1_20230517_162857/tasks/id53task/id1group/id24Poydenko/Пойденко_ИСТ-19а_лаб_5.docx"
+            //     ]
+            //   }
+            Route::post('/taskstudent', 'EducatationMaterialController@ResultGetTaskStudentDiscipline');
+
+            // сохранения результата проверки задания студента
+            // отправка на сервер: {"id_user_reg":39, "token":"", "id_educat_material":null,"id_log_group":null, "id_student":null, "score":null,"id_type_execution":null, "type_execution":null }
+            // отправка на клиент: "error" or "info"
+            Route::post('/checktaskstudent', 'EducatationMaterialController@ResultSaveCheckTaskStudentDiscipline');
+
+            // отправка на сервер: {"id_user_reg":39, "token":"", "id_educat_material":null, "explanation_task":null}
+            Route::post('/editexplanationtask', 'EducatationMaterialController@ResultEditExplanationTask');
+ 
         });
         
         // отправка на сервер: {"id_user_reg":"39","token":"", "id_educat_material":null, "id_disc_flow":22, "name_file":null}
@@ -172,7 +251,7 @@ Route::prefix('/teacher')->group(function ()
         
     });
    
-    // отправка на сервер: {"id_user_reg":"39","token":"", "id_student_teacher":null, "role":null}
+    // отправка на сервер: {"id_user_reg":"39","token":"", "id_student_teacher":null, "id_role":null}
     // отправка на клиент: "error" or
     // {
     //     "id": 43,

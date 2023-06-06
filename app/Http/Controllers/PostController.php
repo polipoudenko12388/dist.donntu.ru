@@ -19,57 +19,60 @@ class PostController extends Controller
         {  
             $arrayinfotoken=AuthorizationController::decodeToken($request->input('token'));
             
-            // добавление поста в т. posts true=1; false=0
-            $date = date("Y-m-d H:i:s", strtotime($request->input('date_end_button')));
-            $id_post=User::getIdInsertRecord(["id_disc_flow"=>$request->input('id_disc_flow'),"id_teacher_creator"=>$arrayinfotoken->id_teacher_student,
-            "date_create_post"=>date('Y-m-d H:i:s'),"id_type_post"=>1,"text"=>$request->input('text'), 
-            "attendance_button"=>(int)(boolval($request->input('attendance_button'))), "date_end_button"=>$date,
-            "id_type_class"=>$request->input('id_type_class'), "date_class"=>date('Y-m-d')], "posts");
-
-            // создание папки поста
-            $folder = User::SearchRecordbyId("discipline_flow",['folder'], 'id',$request->input('id_disc_flow'));
-            $pathdir = $folder->folder."/posts/postid".$id_post;
-            Storage::disk('mypublicdisk')->makeDirectory($pathdir);
-
-            User::UpdateColumn("posts",['id','=',$id_post], ["folder"=>$pathdir]);
-
-            GeneralUserController::UploadFiletoServer($request,$pathdir,'files');
-            
-            if ($request->input('attendance_button') == true)
+            if ($request->input('attendance_button') == false && trim($request->input('text'))==null && $request->hasFile('files')==false) return response()->json(["error"=>"Объявление не было создано."]);
+            else 
             {
+                // добавление поста в т. posts true=1; false=0
+                $date = date("Y-m-d H:i:s", strtotime($request->input('date_end_button')));
+                $id_post=User::getIdInsertRecord(["id_disc_flow"=>$request->input('id_disc_flow'),"id_teacher_creator"=>$arrayinfotoken->id_teacher_student,
+                "date_create_post"=>date('Y-m-d H:i:s'),"id_type_post"=>1,"text"=>$request->input('text'), 
+                "attendance_button"=>(int)(boolval($request->input('attendance_button'))), "date_end_button"=>$date,
+                "id_type_class"=>$request->input('id_type_class'), "date_class"=>date('Y-m-d')], "posts");
+
+                // создание папки поста
+                $folder = User::SearchRecordbyId("discipline_flow",['folder'], 'id',$request->input('id_disc_flow'));
+                $pathdir = $folder->folder."/posts/postid".$id_post;
+                Storage::disk('mypublicdisk')->makeDirectory($pathdir);
+
+                User::UpdateColumn("posts",['id','=',$id_post], ["folder"=>$pathdir]);
+
+                GeneralUserController::UploadFiletoServer($request,$pathdir,'files');
                 
-                // проверить, сущ. ли уже нужный столбец с указанными параметрами по id_disc_flow во всех группах потока
-                $id_log_disc_flow = User::SeachRecordsbyWhere("log_disc_flow", "id_disc_flow=? and id_type_log=?", [$request->input('id_disc_flow'),1],"id")[0]->id;
-                User::UpdateColumn("posts",['id','=',$id_post], ["id_log_disc_flow"=>$id_log_disc_flow]); 
-                $array_log_group = User::SeachRecordsbyWhere("log_group", "id_log=?", [$id_log_disc_flow],"id, id_group,log_group_json");
-
-                for ($i=0;$i<count($array_log_group);$i++) // цикл по журналам групп 
+                if ($request->input('attendance_button') == true)
                 {
-                    $log_group = json_decode($array_log_group[$i]->log_group_json);
-                    $flag=false; $index=0;
-                    for ($j=0;$j<count($log_group->attendance_group);$j++) // цикл по записям в журнале (attendance_group)
-                    {
-                        $name_type_class = User::SearchRecordbyId("type_class", 'short_name', 'id', $request->input('id_type_class'))->short_name;
-                        if ($log_group->attendance_group[$j]->date==date('Y-m-d') && $log_group->attendance_group[$j]->type_class==$name_type_class) { $flag=true; $index=$j; break; }  
-                    }
-                    if ($flag==false)
-                    {
-                        $listStudents = Group::getListStudentsIdGroup($array_log_group[$i]->id_group);
-                        for ($j=0; $j<count($listStudents); $j++) $listStudents[$j]->presence_class="-";
+                    
+                    // проверить, сущ. ли уже нужный столбец с указанными параметрами по id_disc_flow во всех группах потока
+                    $id_log_disc_flow = User::SeachRecordsbyWhere("log_disc_flow", "id_disc_flow=? and id_type_log=?", [$request->input('id_disc_flow'),1],"id")[0]->id;
+                    User::UpdateColumn("posts",['id','=',$id_post], ["id_log_disc_flow"=>$id_log_disc_flow]); 
+                    $array_log_group = User::SeachRecordsbyWhere("log_group", "id_log=?", [$id_log_disc_flow],"id, id_group,log_group_json");
 
-                        $log_group->attendance_group[]=array("date"=>date('Y-m-d'),"type_class"=>"Л","array_students"=>$listStudents);
-
-                        User::UpdateColumn("log_group",['id','=',$array_log_group[$i]->id], ["log_group_json"=>json_encode($log_group)]); 
-                    } 
-                    else if ($flag==true)
+                    for ($i=0;$i<count($array_log_group);$i++) // цикл по журналам групп 
                     {
-                        for ($j=0; $j<count($log_group->attendance_group[$index]->array_students); $j++) $log_group->attendance_group[$index]->array_students[$j]->presence_class="-";
-                        User::UpdateColumn("log_group",['id','=',$array_log_group[$i]->id], ["log_group_json"=>json_encode($log_group)]); 
+                        $log_group = json_decode($array_log_group[$i]->log_group_json);
+                        $flag=false; $index=0;
+                        for ($j=0;$j<count($log_group->attendance_group);$j++) // цикл по записям в журнале (attendance_group)
+                        {
+                            $name_type_class = User::SearchRecordbyId("type_class", 'short_name', 'id', $request->input('id_type_class'))->short_name;
+                            if ($log_group->attendance_group[$j]->date==date('Y-m-d') && $log_group->attendance_group[$j]->type_class==$name_type_class) { $flag=true; $index=$j; break; }  
+                        }
+                        if ($flag==false)
+                        {
+                            $listStudents = Group::getListStudentsIdGroup($array_log_group[$i]->id_group);
+                            for ($j=0; $j<count($listStudents); $j++) $listStudents[$j]->presence_class="-";
+
+                            $log_group->attendance_group[]=array("date"=>date('Y-m-d'),"type_class"=>"Л","array_students"=>$listStudents);
+
+                            User::UpdateColumn("log_group",['id','=',$array_log_group[$i]->id], ["log_group_json"=>json_encode($log_group)]); 
+                        } 
+                        else if ($flag==true)
+                        {
+                            for ($j=0; $j<count($log_group->attendance_group[$index]->array_students); $j++) $log_group->attendance_group[$index]->array_students[$j]->presence_class="-";
+                            User::UpdateColumn("log_group",['id','=',$array_log_group[$i]->id], ["log_group_json"=>json_encode($log_group)]); 
+                        }
                     }
                 }
+                return response()->json(["info"=>"Создание поста прошло успешно."]);
             }
-            return response()->json(["info"=>"Создание поста прошло успешно."]);
-           
         } 
     }
 
