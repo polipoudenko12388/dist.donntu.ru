@@ -14,7 +14,7 @@ class DisciplineController extends Controller
 {
 
     // список дисциплин с потоками, за которыми закреплен преподаватель (создатель дисциплины или закрепленный)
-    public function ListDisciplines(Request $request)
+    public function ListDisciplinesTeacher(Request $request)
     {
         // проверка токена
         $token_verification = GeneralUserController::VerifactionToken($request->input('id_user_reg'),$request->input('token'));
@@ -52,6 +52,33 @@ class DisciplineController extends Controller
             
             return response()->json($ListDisciplinesFlow);
         }   
+    }
+
+    // список дисциплин студента
+    public function ListDisciplinesStudent(Request $request)
+    {
+        // проверка токена
+        $token_verification = GeneralUserController::VerifactionToken($request->input('id_user_reg'),$request->input('token'));
+        if (count($token_verification)==0) return response()->json(["error" => "Вы не авторизованы. Войдите в систему."]);
+        else
+        {
+            $arrayinfotoken=AuthorizationController::decodeToken($request->input('token'));
+            $array_disc_student = Discipline::getListDisciplineStudent($arrayinfotoken->id_teacher_student, $request->input('name_disc'),$request->input('id_disc_flow'));
+
+            for ($i=0;$i<count($array_disc_student); $i++)
+            {
+                $datateacher = User::getListData(User::$ConnectDBWebsite, "teacher", ['user.surname','user.name','user.patronymic'], 
+                'teacher.id', $array_disc_student[$i]->id_teacher_creator,'user', 'user.id','teacher.id_user')[0];
+                $array_disc_student[$i]->surname =  $datateacher->surname;
+                $array_disc_student[$i]->name =  $datateacher->name;
+                $array_disc_student[$i]->patronymic =  $datateacher->patronymic;
+                $array_disc_student[$i]->fon = (Storage::disk('mypublicdisk')->url($array_disc_student[$i]->fon));
+
+                // return  response()->json($datateacher);
+                
+            }
+            return response()->json($array_disc_student);
+        }
     }
 
     public function ResultCreateDisc(Request $request)

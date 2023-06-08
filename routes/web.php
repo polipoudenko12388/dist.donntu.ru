@@ -53,7 +53,7 @@ Route::prefix('/teacher')->group(function ()
         //         }
         //       ]
         //     }, {} ] - весь список или с фильтрацией
-        Route::post('/', 'DisciplineController@ListDisciplines'); // +++
+        Route::post('/', 'DisciplineController@ListDisciplinesTeacher'); // +++
 
         // отправка на сервер: {"id_user_reg":"39","token":"", "id_institute":null, "id_faculty":null, "id_department":null, "name_disc":null}
         // отправка на клиент: "error" or "info"
@@ -482,6 +482,88 @@ Route::prefix('/teacher')->group(function ()
     Route::post('/type_execution',  'EducatationMaterialController@ListTypeExecution'); 
 });
 
+
+Route::prefix('/student')->group(function () 
+{
+    Route::prefix('/disciplines')->group(function () 
+    {
+        // отправка на сервер: {"id_user_reg":"39","token":"", "name_disc":"", "id_disc_flow":null}
+        // отправка на клиент: "error" или 
+        // [
+        //     {
+        //       "id_disc": 23,
+        //       "id_flow": 1,
+        //       "name_flow": "Поток1",
+        //       "id_disc_flow": 37,
+        //       "name_disc": "Дисциплина1",
+        //       "id_institute_db_univ": 2,
+        //       "id_faculty_db_univ": 10,
+        //       "id_department_db_univ": 1,
+        //       "fon": "http://dist.donntu.ru:3030/storage/fileserver/defaultimage/default_fon_discipline.png",
+        //       "id_teacher_creator": 9,
+        //       "surname": "Теплова",
+        //       "name": "Ольга",
+        //       "patronymic": "Валентиновна"
+        //     },{} 
+        // ]
+        Route::post('/', 'DisciplineController@ListDisciplinesStudent'); // +++
+
+
+        // отметиться на занятии
+        // отправка на сервер: {"id_user_reg":"39","token":"","id_post":null}
+        // отправка на клиент: "error" или "info"
+        Route::post('/clickattendancebutton', 'LogController@ResultClickAttendanceButton'); // +++
+
+
+        // окно студента конкретного задания потока дисциплины
+        // отправка на сервер: {"id_user_reg":39, "token":"", "id_educat_material":null}
+        // отправка на клиент: "error" or
+        // {
+        //     "id_log_group": 293,
+        //     "id_type_execution": 3,
+        //     "type_execution": "с оценкой",
+        //     "date": "2023-06-07",
+        //     "score": 4,
+        //     "files": []
+        // }
+        Route::post('/taskstudent', 'EducatationMaterialController@ResultGetTaskDisciplineStudent'); // +++
+
+
+        // отправка выпол. задания на сервер 
+        // отправка на сервер: {"id_user_reg":39, "token":"", "id_educat_material":null, "id_log_group":null, "files":null}
+        Route::post('/getfilestudent', 'EducatationMaterialController@ResultGetFilesTaskStudent'); // +++
+
+    });
+
+    // оценки по предмету 
+    // отправка на сервер: {"id_user_reg":"39","token":"",  "id_disc_flow":null}
+    // отправка на клиент: "error" или
+    // [
+    //     {
+    //       "topic_material": "задание1",
+    //       "min_score": 1,
+    //       "max_score": 5,
+    //       "type_execution": "с оценкой",
+    //       "score": 4,
+    //       "date": "2023-06-07",
+    //       "teacher": {
+    //         "surname": "Матях",
+    //         "name": "Ирина",
+    //         "patronymic": "Владимировна"
+    //       }
+    //     },
+    //     {
+    //       "topic_material": "задание2",
+    //       "min_score": 1,
+    //       "max_score": 5,
+    //       "type_execution": "назначено",
+    //       "score": "отсутствует",
+    //       "date": "отсутствует",
+    //       "teacher": "отсутствует"
+    //     }, {}
+    // ]
+    Route::post('/grades', 'LogController@ListGradesDisciplineStudent'); // +++
+});
 // отправка на сервер: {"id_user_reg":"39","token":""}
 // отправка на клиент: "info" or "error"
 Route::post('/exit','GeneralUserController@exit'); 

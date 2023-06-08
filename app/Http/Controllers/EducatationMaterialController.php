@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Group;
 use App\Models\File;
+use App\Models\UserStudent;
 use Illuminate\Support\Facades\Storage;
 
 class EducatationMaterialController extends Controller
@@ -482,6 +483,100 @@ class EducatationMaterialController extends Controller
                 return response()->json(["info" => "Пояснение к заданию успешно отредактировано."]);
             }
             else return response()->json(["error" => "Выполните ввод пояснения к заданию."]);
+        }
+    }
+
+    // окно конкретного задания студента (для студента)
+    public function ResultGetTaskDisciplineStudent(Request $request)
+    {
+        // проверка токена
+        $token_verification = GeneralUserController::VerifactionToken($request->input('id_user_reg'),$request->input('token'));
+        if (count($token_verification)==0) return response()->json(["error" => "Вы не авторизованы. Войдите в систему."]);
+        else  
+        {
+            $arrayinfotoken=AuthorizationController::decodeToken($request->input('token'));
+            $id_disc_flow = User::SearchRecordbyId("education_material", "id_disc_flow", 'id', $request->input('id_educat_material'))->id_disc_flow;
+            $id_group = UserStudent::getGroupStudent($arrayinfotoken->id_teacher_student,  $id_disc_flow)->id_group;
+
+            $log_group = User::getListData(User::$ConnectDBWebsite, "log_disc_flow", ["log_group.id as id_log_group", 'log_disc_flow.id_type_log','log_group.id_group', 
+            'log_group.log_group_json'], 
+            'log_disc_flow.id_disc_flow',  $id_disc_flow,"log_group", "log_group.id_log","log_disc_flow.id");
+
+            $datataskstudent=[];
+            for ($i=0; $i<count($log_group); $i++)
+            {
+                if ($log_group[$i]->id_type_log == 2 && $log_group[$i]->id_group == $id_group)
+                {
+                    $log = json_decode($log_group[$i]->log_group_json);
+                    for ($j=0; $j<count($log->tasks); $j++)
+                    {
+                        if ($log->tasks[$j]->id_educat_material == $request->input('id_educat_material')) // интересует тек. задание
+                        {
+                            for ($k=0; $k<count($log->tasks[$j]->array_students); $k++)
+                            {
+                                if ($log->tasks[$j]->array_students[$k]->id_student==$arrayinfotoken->id_teacher_student)
+                                {
+                                    $buf = $log->tasks[$j]->array_students[$k];
+                                    $date = ($buf->date==null) ? "отсутствует" : $buf->date;
+                                    $score = ($buf->score==null) ? "отсутствует" : $buf->score;
+                                    
+                                    $datataskstudent=array("id_log_group"=>$log_group[$i]->id_log_group,"id_type_execution"=>$buf->id_type_execution, "type_execution"=>$buf->type_execution, "date"=>$date, 
+                                    "score"=>$score);
+
+                                    $files=Storage::disk('mypublicdisk')->files($buf->folder);
+                                    $datataskstudent['files']=[];
+                                    for ($kk=0;$kk<count($files);$kk++)
+                                    {
+                                        $datataskstudent['files'][$kk]=Storage::disk('mypublicdisk')->url($files[$kk]);
+                                    }
+                                break;
+                                }
+                            }
+                        break;
+                        }
+                    }
+                break;
+                }
+            }
+            return response()->json($datataskstudent);
+        }
+    }
+
+    public function ResultGetFilesTaskStudent(Request $request)
+    {
+        // проверка токена
+        $token_verification = GeneralUserController::VerifactionToken($request->input('id_user_reg'),$request->input('token'));
+        if (count($token_verification)==0) return response()->json(["error" => "Вы не авторизованы. Войдите в систему."]);
+        else  
+        {
+            $arrayinfotoken=AuthorizationController::decodeToken($request->input('token'));
+
+            $date_assignment_task = User::SearchRecordbyId("education_material", 'date_assignment', 'id', $request->input('id_educat_material'))->date_assignment;
+            $log_group = json_decode(User::SearchRecordbyId("log_group", 'log_group_json', 'id', $request->input('id_log_group'))->log_group_json);
+
+            
+            for ($i=0; $i<count($log_group->tasks); $i++)
+            {
+                if ($log_group->tasks[$i]->id_educat_material == $request->input('id_educat_material')) // интересует тек. задание
+                {
+                    for ($j=0; $j<count($log_group->tasks[$i]->array_students); $j++)
+                    {
+                        if ($log_group->tasks[$i]->array_students[$j]->id_student==$arrayinfotoken->id_teacher_student)
+                        {
+                            $id_type_execution = (strtotime($date_assignment_task) < strtotime(date('Y-m-d'))) ? 5 : 2;
+                            $type_execution = User::SearchRecordbyId("type_execution", 'name', 'id', $id_type_execution)->name;
+                            $log_group->tasks[$i]->array_students[$j]->date = date('Y-m-d');
+                            $log_group->tasks[$i]->array_students[$j]->id_type_execution = $id_type_execution;
+                            $log_group->tasks[$i]->array_students[$j]->type_execution = $type_execution;
+
+                            GeneralUserController::UploadFiletoServer($request,$log_group->tasks[$i]->array_students[$j]->folder,'files');
+                            User::UpdateColumn("log_group",['id','=',$request->input('id_log_group')], ["log_group_json"=>json_encode( $log_group)]); 
+                            return response()->json(["info"=>"Отправка выполненного задания на проверку прошла успешно."]);
+                        }
+                    }
+                break;
+                }
+            }
         }
     }
 }

@@ -22,4 +22,29 @@ class Discipline extends Model
         ->get();    
         return $result;
     }
+
+    public static function getListDisciplineStudent($id_student,$namedisc,$id_disc_flow)
+    {
+        $result = DB::connection(Discipline::$ConnectDBWebsite)->table('group_student')
+        ->select('list_disciplines.id as id_disc', 'flow_group.id_flow', 'flow.name as name_flow',  'discipline_flow.id as id_disc_flow', 
+        'list_disciplines.name as name_disc', 'list_disciplines.id_institute_db_univ', 'list_disciplines.id_faculty_db_univ',  'list_disciplines.id_department_db_univ',
+        'list_disciplines.fon', 'list_disciplines.id_teacher as id_teacher_creator')
+        ->join('flow_group', 'flow_group.id_group','=','group_student.id_group')
+        ->join('flow', 'flow.id','=','flow_group.id_flow')
+        ->join('discipline_flow', 'discipline_flow.id_flow','=','flow_group.id_flow')
+        ->join('list_disciplines', 'discipline_flow.id_list_discipline','=','list_disciplines.id')
+        ->where(function ($query)  use (&$namedisc, &$id_student,  &$id_disc_flow)
+         {
+            $query->when($namedisc, function ($query, $namedisc)
+            {
+                $query->where('list_disciplines.name', 'like', '%'.$namedisc.'%');
+            });
+            $query->when($id_disc_flow, function ($query, $id_disc_flow)
+            {
+                $query->where('discipline_flow.id', $id_disc_flow);
+            });
+            $query->where('group_student.id_student', $id_student);
+        })->get();    
+        return $result;
+    }
 }
