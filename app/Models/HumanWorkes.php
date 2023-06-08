@@ -29,9 +29,9 @@ class HumanWorkes extends Human
         $DataHuman = parent::getDataHuman($id_human);
 
         $DataWorkes = DB::connection($this->ConnectDBUniv)->table('human')
-        ->select('role.name as role','status.name as status', 'position.name as position','institute.name as institute','faculty.name as faculty', 'department.name as department')
+        ->select('status.name as status', 'position.name as position','institute.name as institute','faculty.name as faculty', 'department.name as department')
         ->rightjoin('workes', 'human.id','=','workes.id_human')
-        ->join('role', 'role.id','=','workes.id_role')
+        // ->join('role', 'role.id','=','workes.id_role')
         ->join('status', 'status.id','=','workes.id_status_workes')
         ->join('position', 'position.id','=','workes.id_position')
         ->join('info_inst_facul_depart', 'info_inst_facul_depart.id','=','workes.id_info_ifd_x')

@@ -42,7 +42,8 @@ class GeneralUserController extends Controller
             if ($role==5) // преподаватель
             {
                 $HumanWorkes = new HumanWorkes();
-                $dataWorkes = array_merge((array)$HumanWorkes->getDataWorkes($id_human->id_human_db_univ, $role_user->id_role_db_univ),(array)$date_registration);
+                $dataWorkes = array_merge((array)$HumanWorkes->getDataWorkes($id_human->id_human_db_univ, $role_user->id_role_db_univ),
+                ["date_registration"=>$date_registration->date_registration,"role"=>$role_user->name]);
                 if ($dataWorkes['photo']!=null) $dataWorkes['photo']=Storage::disk('mypublicdisk')->url($dataWorkes['photo']);
                 else $dataWorkes['photo']=Storage::disk('mypublicdisk')->url('defaultimage/user_photo.svg');
                 return response()->json($dataWorkes);
